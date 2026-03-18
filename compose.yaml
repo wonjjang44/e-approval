@@ -4,10 +4,10 @@ services:
     container_name: e-approval-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: 2diddnjs@
-      MYSQL_DATABASE: approval
-      MYSQL_USER: yang1
-      MYSQL_PASSWORD: 2diddnjs@
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Seoul
     ports:
       - "3307:3306"
