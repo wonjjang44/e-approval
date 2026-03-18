@@ -1,0 +1,33 @@
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Gradle
+.gradle/
+build/
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Spring local config
+# 환경변수로 접근할 수 있도록 하기 위함 => application.yml(공용)
+src/main/resources/application-local.yml
+src/main/resources/application-secret.yml
+src/main/resources/application-dev.yml
