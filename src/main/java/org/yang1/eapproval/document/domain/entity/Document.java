@@ -60,6 +60,21 @@ public class Document extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @OneToOne(mappedBy = "document")
+    @ToString.Exclude
+    private ApprovalLine approvalLine;
+
+    @OneToMany(mappedBy="document")
+    @ToString.Exclude
+    private List<DocumentAttachment> attachments = new ArrayList<>();
+
+    @OneToMany(mappedBy="document")
+    @ToString.Exclude
+    private List<DocumentHistory> documentHistories = new ArrayList<>();
+
+    @OneToMany(mappedBy="document")
+    @ToString.Exclude
+    private List<ApprovalHistory> approvalHistories = new ArrayList<>();
 
 
     @Builder
