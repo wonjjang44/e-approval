@@ -9,6 +9,7 @@ public enum ActionStatus {
     REJECT, // 반려
     WITHDRAW, // 회수
     RESUBMIT, // 재상신
-    HOLD // 보류
+    HOLD, // 보류
+    DELETED // 삭제
     ;
 }
