@@ -1,0 +1,61 @@
+package org.yang1.eapproval.document.domain.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.document.domain.ApprovalStepStatus;
+import org.yang1.eapproval.user.domain.entity.User;
+
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+@Entity
+@Table(name="approval_steps")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+public class ApprovalStep extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="approval_line_id", nullable=false)
+    @ToString.Exclude
+    private ApprovalLine approvalLine;
+
+    @Column(name="step_order", nullable=false)
+    private Integer stepOrder;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="approver_id", nullable=false)
+    @ToString.Exclude
+    private User approver;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="step_status", nullable=false, length=30)
+    private ApprovalStepStatus stepStatus;
+
+    @Column(name="acted_at")
+    private LocalDateTime actedAt;
+
+    @Column(name="comment_text", length=2000)
+    private String commentText;
+
+
+
+    @Builder
+    private ApprovalStep(Integer stepOrder, User approver, String stepStatus) {
+        this.stepOrder = Objects.requireNonNull(stepOrder);
+        this.approver = Objects.requireNonNull(approver);
+        this.stepStatus = ApprovalStepStatus.WAITING;
+    }
+
+
+    public static ApprovalStep createApprovalStep(Integer stepOrder, User approver) {
+        return ApprovalStep.builder()
+                .stepOrder(stepOrder)
+                .approver(approver)
+                .build();
+    }
+}
