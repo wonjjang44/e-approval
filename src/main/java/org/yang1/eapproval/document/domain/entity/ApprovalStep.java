@@ -7,6 +7,8 @@ import org.yang1.eapproval.document.domain.ApprovalStepStatus;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -42,6 +44,9 @@ public class ApprovalStep extends BaseEntity {
     @Column(name="comment_text", length=2000)
     private String commentText;
 
+    @OneToMany(mappedBy="approvalStep")
+    @ToString.Exclude
+    private List<ApprovalHistory>  approvalHistories = new ArrayList<>();
 
 
     @Builder
