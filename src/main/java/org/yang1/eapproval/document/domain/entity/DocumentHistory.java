@@ -65,4 +65,14 @@ public class DocumentHistory extends BaseEntity {
                 .memo(memo)
                 .build();
     }
+
+
+    /**
+     * 문서와 문서 이력의 연관관계 동기화 메서드
+     *
+     * @param document 문서 이력이 소속될 문서
+     */
+    void addDocument(Document document) {
+        this.document = document;
+    }
 }

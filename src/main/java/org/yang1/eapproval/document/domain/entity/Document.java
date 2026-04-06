@@ -95,4 +95,61 @@ public class Document extends BaseEntity {
                 .content(content)
                 .build();
     }
+
+
+    /**
+     * 문서에 결재선을 연결하는 연관관계 편의 메서드
+     *
+     * @param approvalLine 문서에 연결할 결재선
+     */
+    public void connectApprovalLine(ApprovalLine approvalLine) {
+        this.approvalLine = approvalLine;
+        approvalLine.addDocument(this);
+    }
+
+
+    /**
+     * 문서에 첨부파일을 추가하는 연관관계 편의 메서드
+     *
+     * @param documentAttachment 문서에 추가할 첨부파일
+     */
+    public void connectAttachment(DocumentAttachment documentAttachment) {
+        this.attachments.add(documentAttachment);
+        documentAttachment.addDocument(this);
+    }
+
+
+    /**
+     * 문서에 문서 이력을 추가하는 연관관계 편의 메서드
+     *
+     * @param documentHistory 문서에 추가할 문서 이력
+     */
+    public void connectDocumentHistory(DocumentHistory documentHistory) {
+        this.documentHistories.add(documentHistory);
+        documentHistory.addDocument(this);
+    }
+
+
+    /**
+     * 문서에 결재 이력을 추가하는 연관관계 편의 메서드
+     *
+     * @param approvalHistory 문서에 추가할 결재 이력
+     */
+    public void connectApprovalHistory(ApprovalHistory approvalHistory) {
+        this.approvalHistories.add(approvalHistory);
+        approvalHistory.addDocument(this);
+    }
+
+
+    /**
+     * 문서와 결재 단계에 결재 이력을 함께 연결
+     *
+     * @param approvalStep 결재 이력이 소속될 결재 단계
+     * @param approvalHistory 문서와 결재 단계에 연결할 결재 이력
+     */
+    public void connectApprovalHistory(ApprovalStep approvalStep, ApprovalHistory approvalHistory) {
+        this.connectApprovalHistory(approvalHistory);
+        approvalStep.connectApprovalHistory(approvalHistory);
+    }
+
 }

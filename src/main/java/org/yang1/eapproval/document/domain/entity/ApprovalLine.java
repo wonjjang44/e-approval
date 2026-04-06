@@ -46,4 +46,24 @@ public class ApprovalLine extends BaseEntity {
                 .creator(creator)
                 .build();
     }
+
+    /**
+     * 문서와 결재선 연관관계 동기화 메서드
+     *
+     * @param document 결재선이 소속될 문서
+     */
+    void addDocument(Document document) {
+        this.document = document;
+    }
+
+
+    /**
+     * 결재선에 결재 단계 추가
+     *
+     * @param approvalStep 결재선에 추가할 결재 단계
+     */
+    public void connectApprovalStep(ApprovalStep approvalStep) {
+        this.approvalSteps.add(approvalStep);
+        approvalStep.addApprovalLine(this);
+    }
 }

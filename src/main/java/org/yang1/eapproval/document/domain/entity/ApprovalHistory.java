@@ -70,4 +70,24 @@ public class ApprovalHistory extends BaseEntity {
                 .commentText(commentText)
                 .build();
     }
+
+
+    /**
+     * 문서와 결재 이력의 연관관계 동기화 메서드
+     *
+     * @param document 결재 이력이 소속될 문서
+     */
+    void addDocument(Document document) {
+        this.document = document;
+    }
+
+
+    /**
+     * 결재 단계와 결재 이력의 연관관계 동기화 메서드
+     *
+     * @param approvalStep 결재 이력이 소속될 결재 단계
+     */
+    void addApprovalStep(ApprovalStep approvalStep) {
+        this.approvalStep = approvalStep;
+    }
 }

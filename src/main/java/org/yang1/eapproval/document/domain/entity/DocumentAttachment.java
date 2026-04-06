@@ -69,4 +69,14 @@ public class DocumentAttachment extends BaseEntity {
                 .fileExtension(fileExtension)
                 .build();
     }
+
+
+    /**
+     * 문서와 첨부파일의 연관관계 동기화 메서드
+     *
+     * @param document 첨부파일이 소속될 문서
+     */
+    void addDocument(Document document) {
+        this.document = document;
+    }
 }

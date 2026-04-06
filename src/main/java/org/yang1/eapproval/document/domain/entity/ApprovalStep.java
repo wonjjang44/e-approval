@@ -50,7 +50,7 @@ public class ApprovalStep extends BaseEntity {
 
 
     @Builder
-    private ApprovalStep(Integer stepOrder, User approver, String stepStatus) {
+    private ApprovalStep(Integer stepOrder, User approver) {
         this.stepOrder = Objects.requireNonNull(stepOrder);
         this.approver = Objects.requireNonNull(approver);
         this.stepStatus = ApprovalStepStatus.WAITING;
@@ -62,5 +62,26 @@ public class ApprovalStep extends BaseEntity {
                 .stepOrder(stepOrder)
                 .approver(approver)
                 .build();
+    }
+
+
+    /**
+     * 결재선과 결재 단계의 연관관계 동기화 메서드
+     *
+     * @param approvalLine 결재 단계가 소속될 결재선
+     */
+    void addApprovalLine(ApprovalLine approvalLine) {
+        this.approvalLine = approvalLine;
+    }
+
+
+    /**
+     * 결재 단계에 결재 이력 추가
+     *
+     * @param approvalHistory 결재 단계에 추가할 결재 이력
+     */
+    public void connectApprovalHistory(ApprovalHistory approvalHistory) {
+        this.approvalHistories.add(approvalHistory);
+        approvalHistory.addApprovalStep(this);
     }
 }
