@@ -80,7 +80,7 @@ public class ApprovalStep extends BaseEntity {
      *
      * @param approvalHistory 결재 단계에 추가할 결재 이력
      */
-    public void connectApprovalHistory(ApprovalHistory approvalHistory) {
+    void connectApprovalHistory(ApprovalHistory approvalHistory) {
         this.approvalHistories.add(approvalHistory);
         approvalHistory.addApprovalStep(this);
     }

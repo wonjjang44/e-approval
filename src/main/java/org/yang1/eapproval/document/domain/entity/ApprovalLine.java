@@ -62,7 +62,7 @@ public class ApprovalLine extends BaseEntity {
      *
      * @param approvalStep 결재선에 추가할 결재 단계
      */
-    public void connectApprovalStep(ApprovalStep approvalStep) {
+    void connectApprovalStep(ApprovalStep approvalStep) {
         this.approvalSteps.add(approvalStep);
         approvalStep.addApprovalLine(this);
     }
