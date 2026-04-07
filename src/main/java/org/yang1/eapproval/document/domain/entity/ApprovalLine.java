@@ -29,7 +29,7 @@ public class ApprovalLine extends BaseEntity {
     @ToString.Exclude
     private User creator;
 
-    @OneToMany(mappedBy="approvalLine")
+    @OneToMany(mappedBy="approvalLine", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<ApprovalStep> approvalSteps = new ArrayList<>();
 

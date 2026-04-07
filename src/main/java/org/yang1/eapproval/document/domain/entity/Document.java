@@ -60,19 +60,26 @@ public class Document extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @OneToOne(mappedBy = "document")
+    /**
+     * OneToOne LAZY는 EAGER처럼 동작
+     * 조회 쿼리 별도로 만들어야 할 듯?
+     */
+    @OneToOne(mappedBy = "document", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private ApprovalLine approvalLine;
 
-    @OneToMany(mappedBy="document")
+    // 첨부파일은 논리 삭제로..
+    @OneToMany(mappedBy="document", cascade = CascadeType.PERSIST)
     @ToString.Exclude
     private List<DocumentAttachment> attachments = new ArrayList<>();
 
-    @OneToMany(mappedBy="document")
+    // 이력은 저장할 때만 전이되도록
+    @OneToMany(mappedBy="document", cascade = CascadeType.PERSIST)
     @ToString.Exclude
     private List<DocumentHistory> documentHistories = new ArrayList<>();
 
-    @OneToMany(mappedBy="document")
+    // 이력은 저장할 때만 전이되도록
+    @OneToMany(mappedBy="document", cascade = CascadeType.PERSIST)
     @ToString.Exclude
     private List<ApprovalHistory> approvalHistories = new ArrayList<>();
 
