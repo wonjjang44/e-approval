@@ -25,7 +25,7 @@ public class DocumentHistory extends BaseEntity {
     private Document document;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="actor_id")
+    @JoinColumn(name="actor_id", nullable = false)
     @ToString.Exclude
     private User actor;
 
