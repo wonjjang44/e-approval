@@ -50,17 +50,18 @@ public class ApprovalStep extends BaseEntity {
 
 
     @Builder
-    private ApprovalStep(Integer stepOrder, User approver) {
+    private ApprovalStep(Integer stepOrder, User approver, ApprovalStepStatus stepStatus) {
         this.stepOrder = Objects.requireNonNull(stepOrder);
         this.approver = Objects.requireNonNull(approver);
-        this.stepStatus = ApprovalStepStatus.WAITING;
+        this.stepStatus = Objects.requireNonNull(stepStatus);
     }
 
 
-    public static ApprovalStep createApprovalStep(Integer stepOrder, User approver) {
+    public static ApprovalStep createApprovalStep(Integer stepOrder, User approver, ApprovalStepStatus stepStatus) {
         return ApprovalStep.builder()
                 .stepOrder(stepOrder)
                 .approver(approver)
+                .stepStatus(stepStatus)
                 .build();
     }
 
