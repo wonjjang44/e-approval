@@ -3,6 +3,7 @@ package org.yang1.eapproval.department.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.user.domain.entity.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,10 @@ public class Department extends BaseEntity {
     @Column(name="is_active", nullable = false)
     private boolean isActive = true;
 
+    @OneToMany(mappedBy="department")
+    private List<User> users = new ArrayList<>();
+
+
 
     @Builder
     private Department(String name, Boolean isActive) {
@@ -54,6 +59,23 @@ public class Department extends BaseEntity {
                 .isActive(true)
                 .build();
     }
+
+
+    public void connectChildDepartment(Department childDepartment) {
+        childDepartment.changeParentDepartment(this);
+    }
+
+
+    public void changeParentDepartment(Department parentDepartment) {
+        this.parent = parentDepartment;
+        parentDepartment.children.add(this);
+    }
+
+
+    public void connectUser(User user) {
+        user.changeDepartment(this);
+    }
+
 
 
 }

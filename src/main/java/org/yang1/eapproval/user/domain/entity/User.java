@@ -43,12 +43,12 @@ public class User extends BaseEntity {
     @Column(name="position_name", length = 50)
     private String positionName;
 
-    @Column(name="is_active", nullable = false, length = 1)
+    @Column(name="is_active", nullable = false)
     private boolean isActive;
 
 
     @Builder
-    public User(String loginId, String password, String name, String email, UserRole role, String positionName, Boolean isActive) {
+    private User(String loginId, String password, String name, String email, UserRole role, String positionName, Boolean isActive) {
         this.loginId = Objects.requireNonNull(loginId);
         this.password = Objects.requireNonNull(password);
         this.name = Objects.requireNonNull(name);
@@ -69,5 +69,11 @@ public class User extends BaseEntity {
                 .positionName(positionName)
                 .isActive(true)
                 .build();
+    }
+
+
+    public void changeDepartment(Department department) {
+        this.department = department;
+        department.getUsers().add(this);
     }
 }
