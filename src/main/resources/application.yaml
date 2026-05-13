@@ -1,3 +1,45 @@
 spring:
-  application:
-    name: eapproval
+
+  profiles:
+    default: local
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        default_batch_fetch_size: 200 # batch 사이즈 200으로 설정
+        use_sql_comments: true
+    open-in-view: false # Service 레이어의 @Transactional 안에서 필요한 연관관계를 조회하거나 초기화하고 DTO로 변환해서 Controller에 리턴할 예정
+
+  jackson:
+    time-zone: Asia/Seoul
+
+
+# Swagger API
+springdoc:
+  api-docs:
+    path: /api-docs # API 명세 JSON/YAML 경로 (기본: /v3/api-docs)
+    enabled: true # API 문서 생성 활성화
+
+  swagger-ui:
+    path: /swagger-ui.html # Swagger UI 접근 경로 (기본: /swagger-ui.html)
+    doc-expansion: none # Operation 접은 상태로 초기화
+    filter: true # Tag 조회 영역을 추가
+    try-it-out-enabled: true # 즉시 테스트 가능하도록 설정
+    enabled: true # Swagger UI 활성화
+    operations-sorter: alpha # API 정렬 순서(알파벳 오름차순 순서로 정렬)
+    tags-sorter: alpha
+    display-request-duration: true # 요청 처리 시간 표시
+
+  packages-to-scan: org.yang1.eapproval # 스캔할 컨트롤러 패키지
+
+
+# Logger
+logging:
+  level:
+    org.yang1.eapproval: debug
+#    org.hibernate.type: trace
