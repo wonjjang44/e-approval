@@ -66,6 +66,8 @@ public class Department extends BaseEntity {
      * @return Child Department
      */
     public static Department createChild(String departmentName, Department parent) {
+        if(parent == null) throw new IllegalArgumentException("상위 부서는 null일 수 없습니다.");
+
         Department child = Department.builder()
                 .departmentName(departmentName)
                 .build();
