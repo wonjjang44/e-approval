@@ -31,7 +31,7 @@ class UserTest {
         assertThat(user.getPassword()).isEqualTo(password);
         assertThat(user.getUserName()).isEqualTo(userName);
         assertThat(user.getEmail()).isEqualTo(email);
-        assertThat(user.getPositionName()).가(positionName);
+        assertThat(user.getPositionName()).isEqualTo(positionName);
 
         assertThat(user.getDepartment()).isSameAs(department);
 
