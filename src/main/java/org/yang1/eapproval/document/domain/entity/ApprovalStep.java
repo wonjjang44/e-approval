@@ -48,4 +48,34 @@ public class ApprovalStep extends BaseEntity {
 
 
 
+    @Builder(access = AccessLevel.PRIVATE)
+    private ApprovalStep(int stepOrder, User approver) {
+        this.stepOrder = stepOrder;
+        this.approver = approver;
+        this.stepStatus = ApprovalStepStatus.WAITING;
+    }
+
+
+    public static ApprovalStep createApprovalStep(int stepOrder, User approver) {
+        if(stepOrder <= 0) throw new IllegalArgumentException("결재 순서는 1부터 시작돼야 합니다.");
+        if(approver == null) throw new IllegalArgumentException("결재자는 필수로 입력돼야 합니다.");
+
+        return ApprovalStep.builder()
+                .stepOrder(stepOrder)
+                .approver(approver)
+                .build();
+    }
+
+
+    /**
+     * ApprovalStep <-> ApprovalLine 연관관계 연결
+     *
+     * @param approvalLine ApprovalLine
+     */
+    void changeApprovalLine(ApprovalLine approvalLine) {
+        if(approvalLine == null)
+            throw new IllegalArgumentException("결재선은 필수로 입력돼야 합니다.");
+
+        this.approvalLine = approvalLine;
+    }
 }
