@@ -114,7 +114,7 @@ public class Document extends BaseEntity {
      */
     public void submit(User createdUser, List<User> approver) {
         if(this.documentStatus != DocumentStatus.DRAFT)
-            throw new IllegalStateException("임시저장 상태에서만 결재선을 생성할 수 있습니다.");
+            throw new IllegalStateException("임시저장 상태의 문서만 상신할 수 있습니다.");
 
         // 결재선 생성
         ApprovalLine approvalLine = ApprovalLine.create(createdUser);
