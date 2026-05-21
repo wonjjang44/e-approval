@@ -35,7 +35,6 @@ public class Department extends BaseEntity {
     @Builder(access = AccessLevel.PRIVATE)
     private Department(String departmentName, Department parent) {
         this.departmentName = departmentName;
-        this.parent = parent;
         this.isActive = true;
     }
 
@@ -48,6 +47,9 @@ public class Department extends BaseEntity {
      * @return Parent Department
      */
     public static Department createParent(String departmentName) {
+        // 상위 부서명 검증
+        validateDepartmentName(departmentName);
+
         return Department.builder()
                 .departmentName(departmentName)
                 .build();
@@ -67,6 +69,9 @@ public class Department extends BaseEntity {
      */
     public static Department createChild(String departmentName, Department parent) {
         if(parent == null) throw new IllegalArgumentException("상위 부서는 null일 수 없습니다.");
+
+        // 상위 부서명 검증
+        validateDepartmentName(departmentName);
 
         Department child = Department.builder()
                 .departmentName(departmentName)
@@ -119,5 +124,10 @@ public class Department extends BaseEntity {
             parent.children.add(this);
     }
 
+
+    private static void validateDepartmentName(String departmentName) {
+        if(departmentName == null || departmentName.isBlank()) throw new IllegalArgumentException("부서명은 필수값 입니다.");
+        if(departmentName.length() > 100) throw new IllegalArgumentException("부서명은 100자를 초과할 수 없습니다.");
+    }
 
 }
