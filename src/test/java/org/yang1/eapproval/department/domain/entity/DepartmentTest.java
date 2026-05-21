@@ -39,4 +39,44 @@ class DepartmentTest {
 
     }
 
+
+    @Test
+    @DisplayName("부서명이 누락됐을 경우 예외가 발생해야 한다")
+    void 부서명_누락_예외_발생() {
+        // given
+        String departmentName = "";
+
+        // then
+        assertThatThrownBy(() -> Department.createParent(departmentName))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("부서명은 필수값 입니다.");
+    }
+
+
+    @Test
+    @DisplayName("부서명이 100자라면 부서가 생성된다")
+    void 부서명_100자_부서_생성() {
+        // given
+        String departmentName = "a".repeat(100);
+
+        // when
+        Department department = Department.createParent(departmentName);
+
+        // then
+        assertThat(department.getDepartmentName()).isEqualTo(departmentName);
+    }
+
+
+    @Test
+    @DisplayName("부서명이 100자를 초과한다면 예외가 발생해야 한다")
+    void 부서명_100자_초과_예외() {
+        // given
+        String departmentName = "1".repeat(101);
+
+        // then
+        assertThatThrownBy(() -> Department.createParent(departmentName))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("부서명은 100자를 초과할 수 없습니다.");
+
+    }
 }
