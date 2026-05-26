@@ -78,4 +78,11 @@ public class ApprovalStep extends BaseEntity {
 
         this.approvalLine = approvalLine;
     }
+
+
+    void connectApprovalHistory(ApprovalHistory approvalHistory) {
+        this.approvalHistories.add(approvalHistory);
+
+        approvalHistory.changeApprovalStep(this);
+    }
 }
