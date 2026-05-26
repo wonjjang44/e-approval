@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.document.domain.status.ActionType;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.user.domain.entity.User;
 
@@ -109,15 +110,18 @@ public class Document extends BaseEntity {
     /**
      * 문서 상신
      *
-     * @param createdUser
-     * @param approver
+     * @param actor 결재선 생성자
+     * @param approver 결재자
      */
-    public void submit(User createdUser, List<User> approver) {
+    public void submit(User actor, List<User> approver) {
         if(this.documentStatus != DocumentStatus.DRAFT)
             throw new IllegalStateException("임시저장 상태의 문서만 상신할 수 있습니다.");
 
+        // 현재 문서 상태 저장
+        DocumentStatus beforeStatus = this.documentStatus;
+
         // 결재선 생성
-        ApprovalLine approvalLine = ApprovalLine.create(createdUser);
+        ApprovalLine approvalLine = ApprovalLine.create(actor);
 
         // 결재 단계 생성
         approvalLine.createApprovalSteps(approver);
@@ -126,6 +130,10 @@ public class Document extends BaseEntity {
 
         this.documentStatus = DocumentStatus.IN_PROGRESS;
         this.submittedAt = LocalDateTime.now();
+
+        // 문서 이력 생성
+        // memo는 상태 메세지 클래스로 뺄까? public static final String SUBMITTED = "문서 상신"; 이런식으로
+        createDocumentHistory(actor, ActionType.SUBMITTED, beforeStatus, this.documentStatus, "문서 상신");
     }
 
 
@@ -144,4 +152,47 @@ public class Document extends BaseEntity {
         approvalLine.changeDocument(this);
     }
 
+
+    /**
+     * 문서 이력 생성
+     *
+     * @param actor 행위자
+     * @param actionType 행위타입
+     * @param beforeStatus 이전문서상태
+     * @param afterStatus 현재문서상태
+     * @param memo 비고
+     */
+    private void createDocumentHistory(User actor, ActionType actionType, DocumentStatus beforeStatus, DocumentStatus afterStatus, String memo) {
+        DocumentHistory docHistory = DocumentHistory.create(actor, actionType, beforeStatus, afterStatus, memo);
+
+        connectDocumentHistory(docHistory);
+    }
+
+
+    /**
+     * Document <-> DocumentHistory 연관관계 연결
+     *
+     * @param documentHistory
+     */
+    private void connectDocumentHistory(DocumentHistory documentHistory) {
+        if(documentHistory == null)
+            throw new IllegalArgumentException("문서 이력은 필수값 입니다.");
+
+        this.documentHistories.add(documentHistory);
+
+        // DocumentHistory -> Document 연관관계 연결
+        documentHistory.changeDocument(this);
+    }
+
+
+    void connectApprovalHistory(ApprovalHistory approvalHistory, ApprovalStep approvalStep) {
+        if(approvalHistory == null) throw new IllegalArgumentException("결재 이력은 필수값 입니다.");
+        if(approvalStep == null) throw new IllegalArgumentException("결재 단계는 필수값 입니다.");
+
+        this.approvalHistories.add(approvalHistory);
+        approvalHistory.changeDocument(this);
+
+        approvalStep.connectApprovalHistory(approvalHistory);
+
+    }
 }
