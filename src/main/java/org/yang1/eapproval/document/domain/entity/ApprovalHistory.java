@@ -38,13 +38,43 @@ public class ApprovalHistory extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    private ApprovalStepStatus fromApprovalStatus;
+    private ApprovalStepStatus beforeApprovalStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    private ApprovalStepStatus toApprovalStatus;
+    private ApprovalStepStatus afterApprovalStatus;
 
     @Column(length = 2000)
     private String commentText;
 
+
+    @Builder(access = AccessLevel.PRIVATE)
+    private ApprovalHistory(User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+        this.actor = actor;
+        this.actionType = actionType;
+        this.beforeApprovalStatus = beforeApprovalStatus;
+        this.afterApprovalStatus = afterApprovalStatus;
+        this.commentText = commentText;
+    }
+
+
+    public static ApprovalHistory create(User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+        return ApprovalHistory.builder()
+                .actor(actor)
+                .actionType(actionType)
+                .beforeApprovalStatus(beforeApprovalStatus)
+                .afterApprovalStatus(afterApprovalStatus)
+                .commentText(commentText)
+                .build();
+    }
+
+
+    void changeDocument(Document document) {
+        this.document = document;
+    }
+
+
+    void changeApprovalStep(ApprovalStep approvalStep) {
+        this.approvalStep = approvalStep;
+    }
 }

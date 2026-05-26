@@ -34,13 +34,47 @@ public class DocumentHistory extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    private DocumentStatus fromDocumentStatus;
+    private DocumentStatus beforeDocumentStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    private DocumentStatus toDocumentStatus;
+    private DocumentStatus afterDocumentStatus;
 
     @Column(length = 2000)
     private String memo;
+
+
+
+    @Builder(access = AccessLevel.PRIVATE)
+    private DocumentHistory(User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+        this.actor = actor;
+        this.actionType = actionType;
+        this.beforeDocumentStatus = beforeDocumentStatus;
+        this.afterDocumentStatus = afterDocumentStatus;
+        this.memo = memo;
+    }
+
+
+    public static DocumentHistory create(User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+        return DocumentHistory.builder()
+                .actor(actor)
+                .actionType(actionType)
+                .beforeDocumentStatus(beforeDocumentStatus)
+                .afterDocumentStatus(afterDocumentStatus)
+                .memo(memo)
+                .build();
+    }
+
+
+    /**
+     * Document 연관관계 연결
+     *
+     * @param document
+     */
+    void changeDocument(Document document) {
+        if(document == null) throw new IllegalArgumentException("연결된 문서가 존재해야 합니다.");
+
+        this.document = document;
+    }
 
 }
