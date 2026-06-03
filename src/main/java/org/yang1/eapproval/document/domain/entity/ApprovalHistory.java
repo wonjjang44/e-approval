@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.yang1.eapproval.common.entity.BaseHistoryCreateEntity;
+import org.yang1.eapproval.common.entity.BaseCreatedEntity;
 import org.yang1.eapproval.document.domain.status.ActionType;
 import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
 import org.yang1.eapproval.user.domain.entity.User;
@@ -13,7 +13,7 @@ import org.yang1.eapproval.user.domain.entity.User;
 @Table(name = "approval_histories")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class ApprovalHistory extends BaseHistoryCreateEntity {
+public class ApprovalHistory extends BaseCreatedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
