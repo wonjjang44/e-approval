@@ -2,6 +2,7 @@ package org.yang1.eapproval.document.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseCreatedEntity;
@@ -43,5 +44,25 @@ public class DocumentHistory extends BaseCreatedEntity {
     private String memo;
 
 
+    @Builder(access = AccessLevel.PRIVATE)
+    private DocumentHistory(Document document, User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+        this.document = document;
+        this.actor = actor;
+        this.actionType = actionType;
+        this.beforeDocumentStatus = beforeDocumentStatus;
+        this.afterDocumentStatus = afterDocumentStatus;
+        this.memo = memo;
+    }
 
+
+    public static DocumentHistory create(Document document, User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+        return DocumentHistory.builder()
+                .document(document)
+                .actor(actor)
+                .actionType(actionType)
+                .beforeDocumentStatus(beforeDocumentStatus)
+                .afterDocumentStatus(afterDocumentStatus)
+                .memo(memo)
+                .build();
+    }
 }

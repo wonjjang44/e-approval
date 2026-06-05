@@ -2,6 +2,7 @@ package org.yang1.eapproval.document.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseCreatedEntity;
@@ -45,4 +46,29 @@ public class ApprovalHistory extends BaseCreatedEntity {
 
     @Column(length = 2000)
     private String commentText;
+
+
+    @Builder(access = AccessLevel.PRIVATE)
+    private ApprovalHistory(Document document, ApprovalStep approvalStep, User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+        this.document = document;
+        this.approvalStep = approvalStep;
+        this.actor = actor;
+        this.actionType = actionType;
+        this.beforeApprovalStatus = beforeApprovalStatus;
+        this.afterApprovalStatus = afterApprovalStatus;
+        this.commentText = commentText;
+    }
+
+
+    public static ApprovalHistory create(Document document, ApprovalStep approvalStep, User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+        return ApprovalHistory.builder()
+                .document(document)
+                .approvalStep(approvalStep)
+                .actor(actor)
+                .actionType(actionType)
+                .beforeApprovalStatus(beforeApprovalStatus)
+                .afterApprovalStatus(afterApprovalStatus)
+                .commentText(commentText)
+                .build();
+    }
 }
