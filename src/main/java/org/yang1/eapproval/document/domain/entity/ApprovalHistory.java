@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.common.entity.BaseCreatedEntity;
 import org.yang1.eapproval.document.domain.status.ActionType;
 import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
 import org.yang1.eapproval.user.domain.entity.User;
@@ -14,7 +14,7 @@ import org.yang1.eapproval.user.domain.entity.User;
 @Table(name = "approval_histories")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class ApprovalHistory extends BaseEntity {
+public class ApprovalHistory extends BaseCreatedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,11 +37,11 @@ public class ApprovalHistory extends BaseEntity {
     private ActionType actionType;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30)
+    @Column(nullable = false, length = 30)
     private ApprovalStepStatus beforeApprovalStatus;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30)
+    @Column(nullable = false, length = 30)
     private ApprovalStepStatus afterApprovalStatus;
 
     @Column(length = 2000)
@@ -49,7 +49,9 @@ public class ApprovalHistory extends BaseEntity {
 
 
     @Builder(access = AccessLevel.PRIVATE)
-    private ApprovalHistory(User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+    private ApprovalHistory(Document document, ApprovalStep approvalStep, User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+        this.document = document;
+        this.approvalStep = approvalStep;
         this.actor = actor;
         this.actionType = actionType;
         this.beforeApprovalStatus = beforeApprovalStatus;
@@ -58,23 +60,15 @@ public class ApprovalHistory extends BaseEntity {
     }
 
 
-    public static ApprovalHistory create(User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
+    public static ApprovalHistory create(Document document, ApprovalStep approvalStep, User actor, ActionType actionType, ApprovalStepStatus beforeApprovalStatus, ApprovalStepStatus afterApprovalStatus, String commentText) {
         return ApprovalHistory.builder()
+                .document(document)
+                .approvalStep(approvalStep)
                 .actor(actor)
                 .actionType(actionType)
                 .beforeApprovalStatus(beforeApprovalStatus)
                 .afterApprovalStatus(afterApprovalStatus)
                 .commentText(commentText)
                 .build();
-    }
-
-
-    void changeDocument(Document document) {
-        this.document = document;
-    }
-
-
-    void changeApprovalStep(ApprovalStep approvalStep) {
-        this.approvalStep = approvalStep;
     }
 }

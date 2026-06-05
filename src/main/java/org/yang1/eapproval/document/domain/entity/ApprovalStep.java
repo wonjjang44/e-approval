@@ -7,11 +7,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
 import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
+import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "approval_steps")
@@ -24,7 +23,7 @@ public class ApprovalStep extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approval_line_id",  nullable = false)
+    @JoinColumn(name = "approval_line_id", nullable = false)
     private ApprovalLine approvalLine;
 
     @Column(nullable = false)
@@ -34,8 +33,8 @@ public class ApprovalStep extends BaseEntity {
     @JoinColumn(name = "approver_id", nullable = false)
     private User approver;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
+    @Enumerated(EnumType.STRING)
     private ApprovalStepStatus stepStatus;
 
     private LocalDateTime actedAt;
@@ -43,46 +42,30 @@ public class ApprovalStep extends BaseEntity {
     @Column(length = 2000)
     private String commentText;
 
-    @OneToMany(mappedBy = "approvalStep", cascade = CascadeType.ALL)
-    private List<ApprovalHistory> approvalHistories = new ArrayList<>();
-
-
 
     @Builder(access = AccessLevel.PRIVATE)
-    private ApprovalStep(int stepOrder, User approver) {
-        this.stepOrder = stepOrder;
+    private ApprovalStep(User approver, int stepOrder, String commentText) {
         this.approver = approver;
-        this.stepStatus = ApprovalStepStatus.WAITING;
+        this.stepOrder = stepOrder;
+        this.commentText = commentText;
     }
 
 
-    public static ApprovalStep createApprovalStep(int stepOrder, User approver) {
-        if(stepOrder <= 0) throw new IllegalArgumentException("결재 순서는 1부터 시작돼야 합니다.");
-        if(approver == null) throw new IllegalArgumentException("결재자는 필수로 입력돼야 합니다.");
 
-        return ApprovalStep.builder()
-                .stepOrder(stepOrder)
+    public static ApprovalStep create(User approver, int stepOrder, String commentText) {
+        ApprovalStep step = ApprovalStep.builder()
                 .approver(approver)
+                .stepOrder(stepOrder)
+                .commentText(commentText)
                 .build();
+
+        step.stepStatus = ApprovalStepStatus.WAITING;
+
+        return step;
     }
 
 
-    /**
-     * ApprovalStep <-> ApprovalLine 연관관계 연결
-     *
-     * @param approvalLine ApprovalLine
-     */
-    void changeApprovalLine(ApprovalLine approvalLine) {
-        if(approvalLine == null)
-            throw new IllegalArgumentException("결재선은 필수로 입력돼야 합니다.");
-
+    void connectApprovalLine(ApprovalLine approvalLine) {
         this.approvalLine = approvalLine;
-    }
-
-
-    void connectApprovalHistory(ApprovalHistory approvalHistory) {
-        this.approvalHistories.add(approvalHistory);
-
-        approvalHistory.changeApprovalStep(this);
     }
 }

@@ -6,12 +6,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
-import org.yang1.eapproval.document.domain.status.ActionType;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
+import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -24,14 +23,9 @@ public class Document extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 단방향
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "drafter_id", nullable = false)
     private User drafter;
-
-    // 양방향
-    @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ApprovalLine approvalLine;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -49,13 +43,8 @@ public class Document extends BaseEntity {
     private LocalDateTime withdrawnAt;
     private LocalDateTime deletedAt;
 
-
-    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL)
-    private List<DocumentHistory> documentHistories = new ArrayList<>();
-
-    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL)
-    private List<ApprovalHistory> approvalHistories = new ArrayList<>();
-
+    @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ApprovalLine approvalLine;
 
 
 
@@ -64,135 +53,68 @@ public class Document extends BaseEntity {
         this.drafter = drafter;
         this.title = title;
         this.content = content;
-
-        this.documentStatus = DocumentStatus.DRAFT; // 문서 최초 생성 시 초기 값은 임시저장
     }
 
 
     /**
-     * 문서 임시저장 시 결재선을 생성하지 않고 기본 내용만 저장한다
+     * 문서 제목, 내용 임시저장
      *
      * @param drafter 기안자
      * @param title 제목
      * @param content 내용
      *
-     * @return Document Entity
+     * @return Document
      */
-    public static Document createDocument(User drafter, String title, String content) {
-        return Document.builder()
+    public static Document createDraft(User drafter, String title, String content) {
+        Document doc = Document.builder()
                 .drafter(drafter)
                 .title(title)
                 .content(content)
                 .build();
+
+        doc.documentStatus = DocumentStatus.DRAFT;
+
+        return doc;
     }
 
 
     /**
-     * 문서를 생성하고 이어서 결재선을 만들고 상신한다
+     * 문서 제목, 내용, 결재선 입력 후 임시저장
      *
      * @param drafter 기안자
      * @param title 제목
      * @param content 내용
-     * @param createdUser 결재선 생성자
+     * @param approvalStepDataList 결재자들
      *
-     * @return Document Entity
+     * @return Document
      */
-    public static Document createDocumentAndSubmit(User drafter, String title, String content, User createdUser, List<User> approver) {
-        Document document = createDocument(drafter, title, content);
+    public static Document createDraftWithApprovalLine(User drafter, String title, String content, List<ApprovalStepData> approvalStepDataList) {
+        Document doc = Document.builder()
+                .drafter(drafter)
+                .title(title)
+                .content(content)
+                .build();
 
-        // 문서 상신
-        document.submit(createdUser, approver);
+        doc.documentStatus = DocumentStatus.DRAFT;
 
-        return document;
+        // 결재선 및 결재단계 생성
+        ApprovalLine line = ApprovalLine.create(drafter, approvalStepDataList);
+
+        // 결재선 연관관계 연결
+        doc.assignApprovalLine(line);
+
+        return doc;
     }
 
 
     /**
-     * 문서 상신
+     * Document <-> ApprovalLine 1:1 양방향 연관관계 연결
      *
-     * @param actor 결재선 생성자
-     * @param approver 결재자
+     * @param approvalLine ApprovalLine
      */
-    public void submit(User actor, List<User> approver) {
-        if(this.documentStatus != DocumentStatus.DRAFT)
-            throw new IllegalStateException("임시저장 상태의 문서만 상신할 수 있습니다.");
-
-        // 현재 문서 상태 저장
-        DocumentStatus beforeStatus = this.documentStatus;
-
-        // 결재선 생성
-        ApprovalLine approvalLine = ApprovalLine.create(actor);
-
-        // 결재 단계 생성
-        approvalLine.createApprovalSteps(approver);
-
-        connectApprovalLine(approvalLine);
-
-        this.documentStatus = DocumentStatus.IN_PROGRESS;
-        this.submittedAt = LocalDateTime.now();
-
-        // 문서 이력 생성
-        // memo는 상태 메세지 클래스로 뺄까? public static final String SUBMITTED = "문서 상신"; 이런식으로
-        createDocumentHistory(actor, ActionType.SUBMITTED, beforeStatus, this.documentStatus, "문서 상신");
-    }
-
-
-    /**
-     * Document <-> ApprovalLine 연관관계 연결
-     *
-     * @param approvalLine ApprovalLine Entity
-     */
-    private void connectApprovalLine(ApprovalLine approvalLine) {
-        if(approvalLine == null) throw new IllegalArgumentException("결재선은 필수로 등록해야 합니다.");
-        if(this.approvalLine != null) throw new IllegalStateException("결재선이 이미 존재합니다.");
-
+    private void assignApprovalLine(ApprovalLine approvalLine) {
         this.approvalLine = approvalLine;
-
-        // ApprovalLine -> Document 연관관계 연결 메서드 호출
-        approvalLine.changeDocument(this);
+        approvalLine.connectDocument(this);
     }
 
-
-    /**
-     * 문서 이력 생성
-     *
-     * @param actor 행위자
-     * @param actionType 행위타입
-     * @param beforeStatus 이전문서상태
-     * @param afterStatus 현재문서상태
-     * @param memo 비고
-     */
-    private void createDocumentHistory(User actor, ActionType actionType, DocumentStatus beforeStatus, DocumentStatus afterStatus, String memo) {
-        DocumentHistory docHistory = DocumentHistory.create(actor, actionType, beforeStatus, afterStatus, memo);
-
-        connectDocumentHistory(docHistory);
-    }
-
-
-    /**
-     * Document <-> DocumentHistory 연관관계 연결
-     *
-     * @param documentHistory
-     */
-    private void connectDocumentHistory(DocumentHistory documentHistory) {
-        if(documentHistory == null)
-            throw new IllegalArgumentException("문서 이력은 필수값 입니다.");
-
-        this.documentHistories.add(documentHistory);
-
-        // DocumentHistory -> Document 연관관계 연결
-        documentHistory.changeDocument(this);
-    }
-
-
-    void connectApprovalHistory(ApprovalHistory approvalHistory, ApprovalStep approvalStep) {
-        if(approvalHistory == null) throw new IllegalArgumentException("결재 이력은 필수값 입니다.");
-        if(approvalStep == null) throw new IllegalArgumentException("결재 단계는 필수값 입니다.");
-
-        this.approvalHistories.add(approvalHistory);
-        approvalHistory.changeDocument(this);
-
-        approvalStep.connectApprovalHistory(approvalHistory);
-
-    }
 }

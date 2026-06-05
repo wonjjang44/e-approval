@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.common.entity.BaseCreatedEntity;
 import org.yang1.eapproval.document.domain.status.ActionType;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.user.domain.entity.User;
@@ -14,7 +14,7 @@ import org.yang1.eapproval.user.domain.entity.User;
 @Table(name = "document_histories")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class DocumentHistory extends BaseEntity {
+public class DocumentHistory extends BaseCreatedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,20 +33,20 @@ public class DocumentHistory extends BaseEntity {
     private ActionType actionType;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30)
+    @Column(nullable = false, length = 30)
     private DocumentStatus beforeDocumentStatus;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30)
+    @Column(nullable = false, length = 30)
     private DocumentStatus afterDocumentStatus;
 
     @Column(length = 2000)
     private String memo;
 
 
-
     @Builder(access = AccessLevel.PRIVATE)
-    private DocumentHistory(User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+    private DocumentHistory(Document document, User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+        this.document = document;
         this.actor = actor;
         this.actionType = actionType;
         this.beforeDocumentStatus = beforeDocumentStatus;
@@ -55,8 +55,9 @@ public class DocumentHistory extends BaseEntity {
     }
 
 
-    public static DocumentHistory create(User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
+    public static DocumentHistory create(Document document, User actor, ActionType actionType, DocumentStatus beforeDocumentStatus, DocumentStatus afterDocumentStatus, String memo) {
         return DocumentHistory.builder()
+                .document(document)
                 .actor(actor)
                 .actionType(actionType)
                 .beforeDocumentStatus(beforeDocumentStatus)
@@ -64,17 +65,4 @@ public class DocumentHistory extends BaseEntity {
                 .memo(memo)
                 .build();
     }
-
-
-    /**
-     * Document 연관관계 연결
-     *
-     * @param document
-     */
-    void changeDocument(Document document) {
-        if(document == null) throw new IllegalArgumentException("연결된 문서가 존재해야 합니다.");
-
-        this.document = document;
-    }
-
 }
