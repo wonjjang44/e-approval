@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.util.ArrayList;
@@ -40,13 +41,13 @@ public class ApprovalLine extends BaseEntity {
     }
 
 
-    public static ApprovalLine create(User createdUser, List<ApprovalStep> approvalSteps) {
+    public static ApprovalLine create(User createdUser, List<ApprovalStepData> approvalStepsDataList) {
         ApprovalLine line = ApprovalLine.builder()
                 .createdUser(createdUser)
                 .build();
 
-        for (ApprovalStep step : approvalSteps) {
-            ApprovalStep approvalStep = ApprovalStep.create(step.getApprover(), step.getStepOrder(), step.getCommentText());
+        for (ApprovalStepData stepData : approvalStepsDataList) {
+            ApprovalStep approvalStep = ApprovalStep.create(stepData.getApprover(), stepData.getStepOrder(), stepData.getCommentText());
             line.assignApprovalStep(approvalStep);
         }
 

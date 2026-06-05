@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
+import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.time.LocalDateTime;
@@ -83,11 +84,11 @@ public class Document extends BaseEntity {
      * @param drafter 기안자
      * @param title 제목
      * @param content 내용
-     * @param approvalLine 결재선
+     * @param approvalStepDataList 결재자들
      *
      * @return Document
      */
-    public static Document createDraftWithApprovalLine(User drafter, String title, String content, ApprovalLine approvalLine) {
+    public static Document createDraftWithApprovalLine(User drafter, String title, String content, List<ApprovalStepData> approvalStepDataList) {
         Document doc = Document.builder()
                 .drafter(drafter)
                 .title(title)
@@ -97,7 +98,7 @@ public class Document extends BaseEntity {
         doc.documentStatus = DocumentStatus.DRAFT;
 
         // 결재선 및 결재단계 생성
-        ApprovalLine line = ApprovalLine.create(drafter, approvalLine.getApprovalSteps());
+        ApprovalLine line = ApprovalLine.create(drafter, approvalStepDataList);
 
         // 결재선 연관관계 연결
         doc.assignApprovalLine(line);
