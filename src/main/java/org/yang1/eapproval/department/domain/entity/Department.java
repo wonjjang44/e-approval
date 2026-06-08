@@ -38,6 +38,8 @@ public class Department extends BaseEntity {
 
 
     public static Department createParent(String departmentName, boolean isActive) {
+        if(departmentName == null || departmentName.isBlank()) throw new IllegalArgumentException("부서명은 필수 값 입니다.");
+
         return Department.builder()
                 .departmentName(departmentName)
                 .isActive(isActive)
@@ -46,6 +48,9 @@ public class Department extends BaseEntity {
 
 
     public static Department createChild(String departmentName, Department parent, boolean isActive) {
+        if(departmentName == null || departmentName.isBlank()) throw new IllegalArgumentException("부서명은 필수 값 입니다.");
+        if(parent == null) throw new IllegalArgumentException("상위 부서는 반드시 존재해야 합니다.");
+
         return Department.builder()
                 .departmentName(departmentName)
                 .parent(parent)
