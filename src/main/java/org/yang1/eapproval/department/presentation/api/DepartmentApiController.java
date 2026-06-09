@@ -11,6 +11,8 @@ import org.yang1.eapproval.department.application.service.command.DepartmentSave
 import org.yang1.eapproval.department.presentation.api.dto.request.DepartmentSaveRequest;
 import org.yang1.eapproval.department.presentation.api.dto.response.DepartmentResponse;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -48,4 +50,14 @@ public class DepartmentApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
+    /**
+     * 부서 전체 조회
+     *
+     * @return
+     */
+    @GetMapping("/departments")
+    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
+        return ResponseEntity.ok(departmentService.findAllDepartments());
+    }
 }

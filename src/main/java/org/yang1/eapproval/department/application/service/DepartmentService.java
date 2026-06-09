@@ -12,6 +12,8 @@ import org.yang1.eapproval.department.exception.DuplicateDepartmentNameException
 import org.yang1.eapproval.department.exception.ParentDepartmentNotFoundException;
 import org.yang1.eapproval.department.presentation.api.dto.response.DepartmentResponse;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -60,5 +62,18 @@ public class DepartmentService {
         }
 
         return DepartmentResponse.from(departmentRepository.save(department));
+    }
+
+
+    /**
+     * 부서 전체 조회
+     * - 페이징 및 검색 조건 적용 X
+     *
+     * @return
+     */
+    public List<DepartmentResponse> findAllDepartments() {
+        return departmentRepository.findAll().stream()
+                .map(DepartmentResponse::from)
+                .toList();
     }
 }
