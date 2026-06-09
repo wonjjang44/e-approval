@@ -12,4 +12,6 @@ public interface DepartmentRepository {
     Optional<Department> findById(Long id);
 
     List<Department> findAll();
+
+    boolean existsByDepartmentName(String departmentName);
 }

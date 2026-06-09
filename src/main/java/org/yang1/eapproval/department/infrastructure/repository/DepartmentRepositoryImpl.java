@@ -33,4 +33,10 @@ public class DepartmentRepositoryImpl implements DepartmentRepository {
     public List<Department> findAll() {
         return departmentJpaRepository.findAll();
     }
+
+
+    @Override
+    public boolean existsByDepartmentName(String departmentName) {
+        return departmentJpaRepository.existsByDepartmentName(departmentName);
+    }
 }
