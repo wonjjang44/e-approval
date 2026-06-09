@@ -15,6 +15,8 @@ import org.yang1.eapproval.department.exception.DuplicateDepartmentNameException
 import org.yang1.eapproval.department.exception.ParentDepartmentNotFoundException;
 import org.yang1.eapproval.department.presentation.api.dto.response.DepartmentResponse;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -79,6 +81,41 @@ class DepartmentServiceTest {
             assertThatThrownBy(() -> departmentService.findDepartmentById(departmentId))
                     .isInstanceOf(DepartmentNotFoundException.class)
                     .hasMessage("존재하지 않는 부서입니다.");
+        }
+
+
+        @Test
+        void 부서_전체_조회() {
+            // given
+            Department department1 = mock(Department.class);
+            given(department1.getDepartmentName()).willReturn("A");
+
+            Department department2 = mock(Department.class);
+            given(department2.getDepartmentName()).willReturn("B");
+
+            given(departmentRepository.findAll()).willReturn(List.of(department1, department2));
+
+            // when
+            List<DepartmentResponse> departList = departmentService.findAllDepartments();
+
+            // then
+            assertThat(departList).hasSize(2);
+            assertThat(departList)
+                    .extracting(DepartmentResponse::getDepartmentName)
+                    .containsExactly("A", "B");
+        }
+
+
+        @Test
+        void 부서_전체_조회시_빈_리스트_리턴() {
+            // given
+            given(departmentRepository.findAll()).willReturn(List.of());
+
+            // when
+            List<DepartmentResponse> departList = departmentService.findAllDepartments();
+
+            // then
+            assertThat(departList).isEmpty();
         }
     }
 
@@ -167,6 +204,4 @@ class DepartmentServiceTest {
                     .hasMessage("존재하지 않는 상위 부서입니다.");
         }
     }
-
-
 }
