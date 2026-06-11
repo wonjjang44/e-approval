@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.yang1.eapproval.common.response.ApiResult;
 import org.yang1.eapproval.department.application.service.DepartmentService;
 import org.yang1.eapproval.department.application.service.command.DepartmentSaveCommand;
 import org.yang1.eapproval.department.presentation.api.dto.request.DepartmentSaveRequest;
@@ -31,8 +32,8 @@ public class DepartmentApiController {
      * @return
      */
     @GetMapping("/departments/{departmentId}")
-    public DepartmentResponse getDepartment(@PathVariable Long departmentId) {
-        return departmentService.findDepartmentById(departmentId);
+    public ResponseEntity<ApiResult<DepartmentResponse>> getDepartment(@PathVariable Long departmentId) {
+        return ResponseEntity.ok(ApiResult.success("부서 조회 성공", departmentService.findDepartmentById(departmentId)));
     }
 
 
@@ -43,11 +44,11 @@ public class DepartmentApiController {
      * @return
      */
     @PostMapping("/departments")
-    public ResponseEntity<DepartmentResponse> saveDepartment(@RequestBody @Valid DepartmentSaveRequest request) {
+    public ResponseEntity<ApiResult<DepartmentResponse>> createDepartment(@RequestBody @Valid DepartmentSaveRequest request) {
         DepartmentSaveCommand command = request.toCommand();
         DepartmentResponse response = departmentService.saveDepartment(command);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.success("부서 생성 성공", response));
     }
 
 
@@ -57,7 +58,7 @@ public class DepartmentApiController {
      * @return
      */
     @GetMapping("/departments")
-    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
-        return ResponseEntity.ok(departmentService.findAllDepartments());
+    public ResponseEntity<ApiResult<List<DepartmentResponse>>> getAllDepartments() {
+        return ResponseEntity.ok(ApiResult.success("부서 전체 조회 성공", departmentService.findAllDepartments()));
     }
 }

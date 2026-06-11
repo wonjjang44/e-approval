@@ -60,6 +60,11 @@ public class User extends BaseEntity {
 
 
     public static User create(String loginId, String password, String userName, String email, Department department, UserRole role, String positionName) {
+        if(loginId == null || loginId.isBlank()) throw new IllegalArgumentException("로그인 ID는 반드시 존재해야 합니다.");
+        if(password == null || password.isBlank()) throw new IllegalArgumentException("비밀번호는 반드시 존재해야 합니다.");
+        if(userName == null || userName.isBlank()) throw new IllegalArgumentException("사용자 이름은 반드시 존재해야 합니다.");
+        if(role == null) throw new IllegalArgumentException("권한은 반드시 존재해야 합니다.");
+
         return User.builder()
                 .loginId(loginId)
                 .password(password)
