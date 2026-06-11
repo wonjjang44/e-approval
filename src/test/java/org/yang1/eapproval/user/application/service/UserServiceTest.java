@@ -18,6 +18,7 @@ import org.yang1.eapproval.user.exception.DuplicateUserLoginIdException;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
 import org.yang1.eapproval.user.presentation.dto.response.UserResponse;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +79,43 @@ class UserServiceTest {
             assertThatThrownBy(() -> userService.findUserById(1L))
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage("존재하지 않는 사용자입니다.");
+        }
+
+        
+        @Test
+        @DisplayName("사용자 전체 조회 결과가 있을 경우")
+        void 사용자_전체_데이터_존재() {
+            // given
+            User user1 = mock(User.class);
+            given(user1.getId()).willReturn(1L);
+
+            User user2 = mock(User.class);
+            given(user2.getId()).willReturn(2L);
+
+            given(userRepository.findAll()).willReturn(List.of(user1, user2));
+
+            // when
+            List<UserResponse> userList = userService.findAllUsers();
+
+            // then
+            assertThat(userList).hasSize(2);
+            assertThat(userList)
+                    .extracting(UserResponse::getId)
+                    .containsExactly(1L, 2L);
+        }
+        
+
+        @Test
+        @DisplayName("사용자 전체 조회 결과가 없을 경우")
+        void 사용자_전체_데이터_없음() {
+            // given
+            given(userRepository.findAll()).willReturn(List.of());
+
+            // when
+            List<UserResponse> userList = userService.findAllUsers();
+
+            // then
+            assertThat(userList).isEmpty();
         }
     }
 
