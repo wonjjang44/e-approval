@@ -33,4 +33,13 @@ public class UserRepositoryImpl implements UserRepository {
     public List<User> findAll() {
         return userJpaRepository.findAll();
     }
+
+
+    /**
+     * 사용자 loginId 중복 체크
+     */
+    @Override
+    public boolean existsByLoginId(String loginId) {
+        return userJpaRepository.existsByLoginId(loginId);
+    }
 }

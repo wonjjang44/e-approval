@@ -1,12 +1,13 @@
 package org.yang1.eapproval.user.presentation.dto.response;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.status.UserRole;
 
 @Getter
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserResponse {
 
     private Long id;

@@ -1,12 +1,12 @@
 package org.yang1.eapproval.user.presentation.api;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.yang1.eapproval.user.application.service.UserService;
+import org.yang1.eapproval.user.presentation.dto.request.UserSaveRequest;
 import org.yang1.eapproval.user.presentation.dto.response.UserResponse;
 
 @RestController
@@ -30,6 +30,16 @@ public class UserApiController {
     }
 
 
+    /**
+     * 사용자 등록
+     *
+     * @param request
+     * @return
+     */
+    @PostMapping("/users")
+    public ResponseEntity<UserResponse> saveUser(@RequestBody @Valid UserSaveRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveUser(request.toCommand()));
+    }
 
 
 }

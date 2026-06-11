@@ -13,4 +13,9 @@ public interface UserRepository {
 
     List<User> findAll();
 
+    /**
+     * 사용자 loginId 중복 체크
+     */
+    boolean existsByLoginId(String loginId);
+
 }
