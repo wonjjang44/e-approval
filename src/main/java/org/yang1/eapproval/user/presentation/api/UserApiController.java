@@ -10,6 +10,8 @@ import org.yang1.eapproval.user.application.service.UserService;
 import org.yang1.eapproval.user.presentation.dto.request.UserSaveRequest;
 import org.yang1.eapproval.user.presentation.dto.response.UserResponse;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -43,4 +45,13 @@ public class UserApiController {
     }
 
 
+    /**
+     * 사용자 전체 조회
+     *
+     * @return
+     */
+    @GetMapping("/users")
+    public ResponseEntity<ApiResult<List<UserResponse>>> getAllUsers() {
+        return ResponseEntity.ok(ApiResult.success("사용자 전체 조회 성공", userService.findAllUsers()));
+    }
 }

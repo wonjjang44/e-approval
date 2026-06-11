@@ -13,6 +13,8 @@ import org.yang1.eapproval.user.exception.DuplicateUserLoginIdException;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
 import org.yang1.eapproval.user.presentation.dto.response.UserResponse;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -70,6 +72,18 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         return UserResponse.from(savedUser);
+    }
+
+
+    /**
+     * 사용자 전체 조회
+     *
+     * 검색 및 페이징 적용하지 않음
+     */
+    public List<UserResponse> findAllUsers() {
+        return userRepository.findAll().stream()
+                .map(UserResponse::from)
+                .toList();
     }
 
 }
