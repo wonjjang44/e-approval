@@ -66,6 +66,9 @@ public class Document extends BaseEntity {
      * @return Document
      */
     public static Document createDraft(User drafter, String title, String content) {
+        if(drafter == null) throw new IllegalArgumentException("기안자는 누락될 수 없습니다.");
+        if(title == null || title.isBlank()) throw new IllegalArgumentException("제목은 누락될 수 없습니다.");
+
         Document doc = Document.builder()
                 .drafter(drafter)
                 .title(title)
@@ -89,6 +92,10 @@ public class Document extends BaseEntity {
      * @return Document
      */
     public static Document createDraftWithApprovalLine(User drafter, String title, String content, List<ApprovalStepData> approvalStepDataList) {
+        if(drafter == null) throw new IllegalArgumentException("기안자는 누락될 수 없습니다.");
+        if(title == null || title.isBlank()) throw new IllegalArgumentException("제목은 누락될 수 없습니다.");
+        if(approvalStepDataList == null || approvalStepDataList.isEmpty()) throw new IllegalArgumentException("결재자는 누락될 수 없습니다.");
+
         Document doc = Document.builder()
                 .drafter(drafter)
                 .title(title)
