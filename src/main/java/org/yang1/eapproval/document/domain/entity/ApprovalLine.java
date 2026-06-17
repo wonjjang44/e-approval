@@ -31,6 +31,7 @@ public class ApprovalLine extends BaseEntity {
     private User createdUser;
 
     @OneToMany(mappedBy = "approvalLine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("stepOrder asc")
     private List<ApprovalStep> approvalSteps = new ArrayList<>();
 
 
