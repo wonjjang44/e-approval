@@ -11,6 +11,8 @@ import org.yang1.eapproval.document.domain.repository.DocumentRepository;
 import org.yang1.eapproval.document.domain.status.ActionType;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
+import org.yang1.eapproval.document.exception.DocumentNotFoundException;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.repository.UserRepository;
@@ -78,4 +80,21 @@ public class DocumentService {
         return DocumentDraftResponse.from(savedDoc);
     }
 
+
+    /**
+     * 문서 상세조회
+     *
+     * @param id pk
+     * @return
+     */
+    public DocumentDetailResponse getDocumentDetail(Long id) {
+        // 1 + N 이슈
+//        Document findDoc = documentRepository.findById(id)
+//                .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
+
+        Document findDoc = documentRepository.findDetailById(id)
+                .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
+
+        return DocumentDetailResponse.from(findDoc);
+    }
 }

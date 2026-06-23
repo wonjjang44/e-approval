@@ -12,4 +12,15 @@ public interface DocumentRepository {
     Document save(Document document);
 
     List<Document> findAll();
+
+
+    /**
+     * 문서 상세 조회
+     *
+     * fetch join 적용
+     *
+     * @param id pk
+     * @return
+     */
+    Optional<Document> findDetailById(Long id);
 }
