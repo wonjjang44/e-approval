@@ -4,13 +4,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.yang1.eapproval.common.response.ApiResult;
 import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
 import org.yang1.eapproval.document.application.service.DocumentService;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
 import org.yang1.eapproval.document.presentation.api.dto.request.DocumentDraftRequest;
 
@@ -34,6 +32,18 @@ public class DocumentApiController {
         DocumentDraftCommand command = request.toCommand();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.success("문서 임시저장 성공", documentService.saveDraftDocument(command)));
+    }
+
+
+    /**
+     * 문서 한 건 상세 조회
+     *
+     * @param id doc pk
+     * @return
+     */
+    @GetMapping("/documents/{documentId}")
+    public ResponseEntity<ApiResult<DocumentDetailResponse>> getDocument(@PathVariable(name = "documentId") Long id) {
+        return ResponseEntity.ok(ApiResult.success("문서 조회 성공", documentService.getDocumentDetail(id)));
     }
 
 }

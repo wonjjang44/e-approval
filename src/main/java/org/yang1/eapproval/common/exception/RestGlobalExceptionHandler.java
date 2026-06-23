@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.yang1.eapproval.common.response.ApiResult;
 import org.yang1.eapproval.department.exception.DepartmentNotFoundException;
 import org.yang1.eapproval.department.exception.DuplicateDepartmentNameException;
+import org.yang1.eapproval.document.exception.DocumentNotFoundException;
 import org.yang1.eapproval.user.exception.DuplicateUserLoginIdException;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
 
@@ -40,6 +41,12 @@ public class RestGlobalExceptionHandler {
     @ExceptionHandler(DuplicateUserLoginIdException.class)
     public ResponseEntity<ApiResult<String>> handleDuplicateUserLoginIdException(DuplicateUserLoginIdException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResult.failure(ex.getMessage()));
+    }
+
+
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<ApiResult<String>> handleDocumentNotFoundException(DocumentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResult.failure(ex.getMessage()));
     }
 
 
