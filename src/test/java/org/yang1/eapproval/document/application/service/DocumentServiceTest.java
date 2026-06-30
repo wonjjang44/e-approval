@@ -8,7 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.yang1.eapproval.document.application.command.ApprovalStepDraftCommand;
+import org.yang1.eapproval.document.application.command.ApprovalStepCommand;
 import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
 import org.yang1.eapproval.document.domain.entity.Document;
 import org.yang1.eapproval.document.domain.entity.DocumentHistory;
@@ -151,7 +151,7 @@ class DocumentServiceTest {
             String title = "결재선 임시저장";
             String content = "결재선 임시저장 테스트";
 
-            List<ApprovalStepDraftCommand> steps = List.of(ApprovalStepDraftCommand.of(approverId, 1, "첫 번째 결재자"));
+            List<ApprovalStepCommand> steps = List.of(ApprovalStepCommand.of(approverId, 1, "첫 번째 결재자"));
             DocumentDraftCommand command = DocumentDraftCommand.of(drafterId, title, content, steps);
 
             // 기안자 존재
@@ -182,8 +182,8 @@ class DocumentServiceTest {
             String title = "일괄 임시저장";
             String content = "일괄 임시저장 테스트";
 
-            ApprovalStepDraftCommand step1 = ApprovalStepDraftCommand.of(approverId1, 1, "첫 번째 결재자");
-            ApprovalStepDraftCommand step2 = ApprovalStepDraftCommand.of(approverId2, 2, "두 번째 결재자");
+            ApprovalStepCommand step1 = ApprovalStepCommand.of(approverId1, 1, "첫 번째 결재자");
+            ApprovalStepCommand step2 = ApprovalStepCommand.of(approverId2, 2, "두 번째 결재자");
 
             DocumentDraftCommand command = DocumentDraftCommand.of(drafterId, title, content, List.of(step1, step2));
 

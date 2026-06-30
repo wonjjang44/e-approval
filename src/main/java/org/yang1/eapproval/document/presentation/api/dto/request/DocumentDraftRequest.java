@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.yang1.eapproval.document.application.command.ApprovalStepDraftCommand;
+import org.yang1.eapproval.document.application.command.ApprovalStepCommand;
 import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
 
 import java.util.List;
@@ -23,13 +23,13 @@ public class DocumentDraftRequest {
     private String content;
 
     @Valid
-    private List<ApprovalStepDraftRequest> steps;
+    private List<ApprovalStepRequest> steps;
 
 
     public DocumentDraftCommand toCommand() {
         // presentation Request DTO를 Command로 변환
-        List<ApprovalStepDraftCommand> stepCommands = this.steps == null ? List.of() : steps.stream()
-                .map(ApprovalStepDraftRequest::toCommand).toList();
+        List<ApprovalStepCommand> stepCommands = this.steps == null ? List.of() : steps.stream()
+                .map(ApprovalStepRequest::toCommand).toList();
 
         return DocumentDraftCommand.of(this.drafterId, this.title, this.content, stepCommands);
     }

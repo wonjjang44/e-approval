@@ -14,10 +14,10 @@ public class DocumentDraftCommand {
     private String title;
     private String content;
 
-    private List<ApprovalStepDraftCommand> steps;
+    private List<ApprovalStepCommand> steps;
 
 
-    public static DocumentDraftCommand of(Long drafterId, String title, String content, List<ApprovalStepDraftCommand> steps) {
+    public static DocumentDraftCommand of(Long drafterId, String title, String content, List<ApprovalStepCommand> steps) {
         return new DocumentDraftCommand(
                 drafterId,
                 title,

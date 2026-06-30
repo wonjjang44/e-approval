@@ -10,7 +10,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class DraftedDocumentSubmitResponse {
+public class DocumentSubmitResponse {
 
     private Long documentId;
     private String drafterName;
@@ -22,8 +22,8 @@ public class DraftedDocumentSubmitResponse {
 
 
 
-    public static DraftedDocumentSubmitResponse from(Document document) {
-        return new DraftedDocumentSubmitResponse(
+    public static DocumentSubmitResponse from(Document document) {
+        return new DocumentSubmitResponse(
                 document.getId(),
                 document.getDrafter().getUserName(),
                 document.getTitle(),

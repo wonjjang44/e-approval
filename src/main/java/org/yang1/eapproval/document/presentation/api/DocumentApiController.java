@@ -11,7 +11,7 @@ import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCom
 import org.yang1.eapproval.document.application.service.DocumentService;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DraftedDocumentSubmitResponse;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
 import org.yang1.eapproval.document.presentation.api.dto.request.DocumentDraftRequest;
 import org.yang1.eapproval.document.presentation.api.dto.request.DraftedDocumentSubmitRequest;
 
@@ -58,7 +58,7 @@ public class DocumentApiController {
      * @return
      */
     @PostMapping("/documents/{documentId}/submit")
-    public ResponseEntity<ApiResult<DraftedDocumentSubmitResponse>> createDraftedSubmitDocument(@PathVariable Long documentId, @RequestBody @Valid DraftedDocumentSubmitRequest request) {
+    public ResponseEntity<ApiResult<DocumentSubmitResponse>> createDraftedSubmitDocument(@PathVariable Long documentId, @RequestBody @Valid DraftedDocumentSubmitRequest request) {
         DraftedDocumentSubmitCommand command = request.toCommand(documentId);
 
         return ResponseEntity.ok(ApiResult.success("임시저장 문서 상신 성공", documentService.submitDraftedDocument(command)));

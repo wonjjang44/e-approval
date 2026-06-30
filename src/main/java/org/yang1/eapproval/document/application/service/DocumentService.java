@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
-import org.yang1.eapproval.document.application.command.DocumentSubmitCommand;
 import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
 import org.yang1.eapproval.document.domain.entity.Document;
 import org.yang1.eapproval.document.domain.entity.DocumentHistory;
@@ -17,7 +16,6 @@ import org.yang1.eapproval.document.exception.DocumentNotFoundException;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DraftedDocumentSubmitResponse;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.repository.UserRepository;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
@@ -106,7 +104,7 @@ public class DocumentService {
      * @return
      */
     @Transactional
-    public DraftedDocumentSubmitResponse submitDraftedDocument(DraftedDocumentSubmitCommand command) {
+    public DocumentSubmitResponse submitDraftedDocument(DraftedDocumentSubmitCommand command) {
         // 기존 문서 조회
         Document findDoc = documentRepository.findDetailById(command.getDocumentId())
                 .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
@@ -139,7 +137,7 @@ public class DocumentService {
 
         documentHistoryRepository.save(findDocHistory);
 
-        return DraftedDocumentSubmitResponse.from(findDoc);
+        return DocumentSubmitResponse.from(findDoc);
     }
 
 }

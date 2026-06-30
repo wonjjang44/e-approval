@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.yang1.eapproval.document.application.command.ApprovalStepDraftCommand;
+import org.yang1.eapproval.document.application.command.ApprovalStepCommand;
 import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
 
 import java.util.List;
@@ -25,13 +25,13 @@ public class DraftedDocumentSubmitRequest {
 
     @Valid
     @NotEmpty(message = "결재단계는 누락될 수 없습니다.")
-    private List<ApprovalStepDraftRequest> steps;
+    private List<ApprovalStepRequest> steps;
 
 
 
     public DraftedDocumentSubmitCommand toCommand(Long documentId) {
-        List<ApprovalStepDraftCommand> approvalSteps = this.steps == null ? List.of() : steps.stream()
-                .map(ApprovalStepDraftRequest::toCommand).toList();
+        List<ApprovalStepCommand> approvalSteps = this.steps == null ? List.of() : steps.stream()
+                .map(ApprovalStepRequest::toCommand).toList();
 
         return DraftedDocumentSubmitCommand.of(documentId, this.drafterId, this.title, this.content, approvalSteps);
     }
