@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
+import org.yang1.eapproval.document.application.command.DocumentSubmitCommand;
+import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
 import org.yang1.eapproval.document.domain.entity.Document;
 import org.yang1.eapproval.document.domain.entity.DocumentHistory;
 import org.yang1.eapproval.document.domain.repository.DocumentHistoryRepository;
@@ -14,6 +16,8 @@ import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.document.exception.DocumentNotFoundException;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.DraftedDocumentSubmitResponse;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.repository.UserRepository;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
@@ -88,13 +92,54 @@ public class DocumentService {
      * @return
      */
     public DocumentDetailResponse getDocumentDetail(Long id) {
-        // 1 + N 이슈
-//        Document findDoc = documentRepository.findById(id)
-//                .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
-
         Document findDoc = documentRepository.findDetailById(id)
                 .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
 
         return DocumentDetailResponse.from(findDoc);
     }
+
+
+    /**
+     * 임시저장 문서 상신
+     *
+     * @param command 내용 + 결재선
+     * @return
+     */
+    @Transactional
+    public DraftedDocumentSubmitResponse submitDraftedDocument(DraftedDocumentSubmitCommand command) {
+        // 기존 문서 조회
+        Document findDoc = documentRepository.findDetailById(command.getDocumentId())
+                .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
+
+        findDoc.updateTitle(command.getTitle());
+        findDoc.updateContent(command.getContent());
+
+        // 결재자 등록
+        List<ApprovalStepData> stepDataVoList = command.getSteps().stream()
+                .map(s -> {
+                    User approver = userRepository.findById(s.getApproverId())
+                            .orElseThrow(() -> new UserNotFoundException("결재자가 존재하지 않습니다."));
+
+                    return ApprovalStepData.of(approver, s.getStepOrder(), s.getCommentText());
+                })
+                .toList();
+
+        findDoc.attachApprovalLine(stepDataVoList);
+
+        findDoc.submit();
+
+        // 이력 추가
+        DocumentHistory findDocHistory = DocumentHistory.create(
+                findDoc, findDoc.getDrafter(),
+                ActionType.SUBMITTED,
+                DocumentStatus.DRAFT,
+                DocumentStatus.IN_PROGRESS,
+                "임시저장 문서 상신"
+        );
+
+        documentHistoryRepository.save(findDocHistory);
+
+        return DraftedDocumentSubmitResponse.from(findDoc);
+    }
+
 }

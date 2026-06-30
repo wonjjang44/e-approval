@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
 import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
-import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.time.LocalDateTime;
@@ -62,6 +61,14 @@ public class ApprovalStep extends BaseEntity {
         step.stepStatus = ApprovalStepStatus.WAITING;
 
         return step;
+    }
+
+
+    public void stepSubmit() {
+        if(this.stepStatus != ApprovalStepStatus.WAITING)
+            throw new IllegalStateException("결재 대기 상태일 경우만 해당됩니다.");
+
+        this.stepStatus = ApprovalStepStatus.PENDING;
     }
 
 

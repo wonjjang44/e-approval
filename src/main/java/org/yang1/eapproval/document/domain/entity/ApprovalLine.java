@@ -7,9 +7,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
 import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
+import org.yang1.eapproval.document.exception.InvalidDocumentStatusException;
 import org.yang1.eapproval.user.domain.entity.User;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Entity
@@ -55,6 +57,31 @@ public class ApprovalLine extends BaseEntity {
         return line;
     }
 
+
+    public void lineSubmit() {
+        // 순서 정렬 후 가장 첫 번째 결재자의 결재 상태 변경(WAITING -> PENDING)
+        this.approvalSteps.stream()
+                .min(Comparator.comparingInt(ApprovalStep::getStepOrder))
+                .orElseThrow(() -> new InvalidDocumentStatusException("결재 단계가 존재하지 않습니다."))
+                .stepSubmit();
+    }
+
+
+    /**
+     * 결재 단계를 변경한다
+     *
+     * @param steps 결재 단계(결재자들)
+     */
+    public void replaceSteps(List<ApprovalStepData> steps) {
+        // 재할당이 아니라 완전 초기화(리스트 비우기)
+        this.approvalSteps.clear();
+
+        steps.forEach(step -> {
+            ApprovalStep approvalStep = ApprovalStep.create(step.getApprover(), step.getStepOrder(), step.getCommentText());
+            assignApprovalStep(approvalStep);
+        });
+
+    }
 
 
     void connectDocument(Document document) {
