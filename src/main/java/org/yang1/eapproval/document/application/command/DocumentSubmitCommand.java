@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class DocumentDraftCommand {
+public class DocumentSubmitCommand {
 
     private Long drafterId;
     private String title;
@@ -17,13 +17,8 @@ public class DocumentDraftCommand {
     private List<ApprovalStepCommand> steps;
 
 
-    public static DocumentDraftCommand of(Long drafterId, String title, String content, List<ApprovalStepCommand> steps) {
-        return new DocumentDraftCommand(
-                drafterId,
-                title,
-                content,
-                steps == null ? List.of() : steps
-        );
+    public static DocumentSubmitCommand of(Long drafterId, String title, String content, List<ApprovalStepCommand> steps) {
+        return new DocumentSubmitCommand(drafterId, title, content, steps);
     }
 
 }

@@ -2,18 +2,19 @@ package org.yang1.eapproval.document.presentation.api.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.document.application.command.ApprovalStepCommand;
-import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
+import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
 
 import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class DocumentDraftRequest {
+public class DraftedDocumentSubmitRequest {
 
     @NotNull(message = "기안자는 누락될 수 없습니다.")
     private Long drafterId;
@@ -23,14 +24,16 @@ public class DocumentDraftRequest {
     private String content;
 
     @Valid
+    @NotEmpty(message = "결재단계는 누락될 수 없습니다.")
     private List<ApprovalStepRequest> steps;
 
 
-    public DocumentDraftCommand toCommand() {
-        // presentation Request DTO를 Command로 변환
-        List<ApprovalStepCommand> stepCommands = this.steps == null ? List.of() : steps.stream()
+
+    public DraftedDocumentSubmitCommand toCommand(Long documentId) {
+        List<ApprovalStepCommand> approvalSteps = this.steps == null ? List.of() : steps.stream()
                 .map(ApprovalStepRequest::toCommand).toList();
 
-        return DocumentDraftCommand.of(this.drafterId, this.title, this.content, stepCommands);
+        return DraftedDocumentSubmitCommand.of(documentId, this.drafterId, this.title, this.content, approvalSteps);
     }
+
 }

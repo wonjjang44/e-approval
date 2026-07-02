@@ -8,8 +8,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.yang1.eapproval.document.application.command.ApprovalStepDraftCommand;
+import org.yang1.eapproval.document.application.command.ApprovalStepCommand;
 import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
+import org.yang1.eapproval.document.application.command.DocumentSubmitCommand;
+import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
 import org.yang1.eapproval.document.domain.entity.Document;
 import org.yang1.eapproval.document.domain.entity.DocumentHistory;
 import org.yang1.eapproval.document.domain.repository.DocumentHistoryRepository;
@@ -22,6 +24,7 @@ import org.yang1.eapproval.document.exception.DocumentNotFoundException;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.ApprovalStepResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
 import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.repository.UserRepository;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
@@ -151,7 +154,7 @@ class DocumentServiceTest {
             String title = "결재선 임시저장";
             String content = "결재선 임시저장 테스트";
 
-            List<ApprovalStepDraftCommand> steps = List.of(ApprovalStepDraftCommand.of(approverId, 1, "첫 번째 결재자"));
+            List<ApprovalStepCommand> steps = List.of(ApprovalStepCommand.of(approverId, 1, "첫 번째 결재자"));
             DocumentDraftCommand command = DocumentDraftCommand.of(drafterId, title, content, steps);
 
             // 기안자 존재
@@ -182,8 +185,8 @@ class DocumentServiceTest {
             String title = "일괄 임시저장";
             String content = "일괄 임시저장 테스트";
 
-            ApprovalStepDraftCommand step1 = ApprovalStepDraftCommand.of(approverId1, 1, "첫 번째 결재자");
-            ApprovalStepDraftCommand step2 = ApprovalStepDraftCommand.of(approverId2, 2, "두 번째 결재자");
+            ApprovalStepCommand step1 = ApprovalStepCommand.of(approverId1, 1, "첫 번째 결재자");
+            ApprovalStepCommand step2 = ApprovalStepCommand.of(approverId2, 2, "두 번째 결재자");
 
             DocumentDraftCommand command = DocumentDraftCommand.of(drafterId, title, content, List.of(step1, step2));
 
@@ -345,5 +348,271 @@ class DocumentServiceTest {
             assertThat(response.getSteps()).isEmpty();
         }
         
+    }
+
+
+    @Nested
+    @DisplayName("문서 상신 테스트")
+    class CreateSubmitDocumentTest {
+
+        @Test
+        @DisplayName("임시저장 상태의 문서를 상신할 때, 기존 임시저장된 문서가 조회하지 않는다면 예외가 발생해야 한다")
+        void 임시저장_문서_존재하지_않을_시_예외() {
+            // given
+            Long drafterId = 1L;
+            DraftedDocumentSubmitCommand command = DraftedDocumentSubmitCommand.of(1L, drafterId, "title", "content", List.of());
+
+            given(documentRepository.findDetailById(drafterId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.submitDraftedDocument(command))
+                    .isInstanceOf(DocumentNotFoundException.class)
+                    .hasMessage("문서가 존재하지 않습니다.");
+        }
+
+
+        @Test
+        @DisplayName("임시저장 상태의 문서에 결재선을 추가 시 결재자가 존재하지 않으면 예외가 발생해야 한다")
+        void 임시저장_문서_결재선_추가_시_결재가_존재하지_않으면_예외() {
+            // given
+            Long approverId = 1L;
+            Long documentId = 11L;
+
+            ApprovalStepCommand approver = ApprovalStepCommand.of(approverId, 1, "임시저장 결재선 추가");
+            DraftedDocumentSubmitCommand command = DraftedDocumentSubmitCommand.of(documentId, 1L, "title", "content", List.of(approver));
+
+            Document doc = mock(Document.class);
+            given(documentRepository.findDetailById(documentId)).willReturn(Optional.of(doc));
+
+            given(userRepository.findById(approverId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.submitDraftedDocument(command))
+                    .isInstanceOf(UserNotFoundException.class)
+                    .hasMessage("결재자가 존재하지 않습니다.");
+        }
+
+
+        @Test
+        @DisplayName("임시저장 상태의 문서를 상신한다")
+        void 임시저장_문서_상신() {
+            // given
+            Long drafterId = 1L;
+
+            Long approverId1 = 1L;
+            Long approverId2 = 2L;
+
+            String changeTitle = "변경 후 제목";
+            String changeContent = "변경 후 내용";
+
+            ApprovalStepCommand approverCommand1 = ApprovalStepCommand.of(approverId1, 1, "첫 번째 결재자");
+            ApprovalStepCommand approverCommand2 = ApprovalStepCommand.of(approverId2, 2, "두 번째 결재자");
+            DraftedDocumentSubmitCommand command = DraftedDocumentSubmitCommand.of(1L, drafterId, "변경 후 제목", "변경 후 내용", List.of(approverCommand1, approverCommand2));
+
+            User drafter = mock(User.class);
+
+            User approver1 = mock(User.class);
+            given(userRepository.findById(1L)).willReturn(Optional.of(approver1));
+
+            User approver2 = mock(User.class);
+            given(userRepository.findById(2L)).willReturn(Optional.of(approver2));
+
+            ApprovalStepData approverData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+            ApprovalStepData approverData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+
+            Document doc = Document.createDraftWithApprovalLine(drafter, "변경 전 제목", "변경 전 내용", List.of(approverData1, approverData2));
+            given(documentRepository.findDetailById(drafterId)).willReturn(Optional.of(doc));
+
+            // when
+            DocumentSubmitResponse submittedDoc = documentService.submitDraftedDocument(command);
+
+            // then
+            assertThat(submittedDoc.getTitle()).isEqualTo(changeTitle);
+            assertThat(submittedDoc.getContent()).isEqualTo(changeContent);
+            assertThat(submittedDoc.getDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+            assertThat(submittedDoc.getSteps())
+                    .extracting(ApprovalStepResponse::getStepOrder, ApprovalStepResponse::getStepStatus)
+                    .containsExactly(
+                            tuple(1, ApprovalStepStatus.PENDING),
+                            tuple(2, ApprovalStepStatus.WAITING)
+                    );
+        }
+
+
+        @Test
+        @DisplayName("신규 문서 상신 시 기안자가 누락되면 예외가 발생해야 한다")
+        void 신규_문서_상신_시_기안자_누락되면_예외() {
+            // given
+            DocumentSubmitCommand command = DocumentSubmitCommand.of(null, "", "", List.of());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.submitDocument(command))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("기안자는 누락될 수 없습니다.");
+        }
+
+
+        @Test
+        @DisplayName("신규 문서 상신 시 기안자가 존재하지 않는다면 예외가 발생해야 한다")
+        void 신규_문서_상신_시_기안자_존재하지_않는다면_예외() {
+            // given
+            Long drafterId = 1L;
+
+            DocumentSubmitCommand command = DocumentSubmitCommand.of(drafterId, "", "", List.of());
+
+            given(userRepository.findById(drafterId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.submitDocument(command))
+                    .isInstanceOf(UserNotFoundException.class)
+                    .hasMessage("기안자가 존재하지 않습니다.");
+        }
+
+
+        @Test
+        @DisplayName("신규 문서 상신 시 결재자가 존재하지 않는다면 예외가 발생해야 한다")
+        void 결재자_존재하지_않는다면_예외() {
+            // given
+            Long drafterId = 1L;
+
+            Long approverId = 11L;
+
+            User drafter = mock(User.class);
+            given(userRepository.findById(drafterId)).willReturn(Optional.of(drafter));
+
+            ApprovalStepCommand approver = ApprovalStepCommand.of(approverId, 1, "첫 번째 결재자");
+            DocumentSubmitCommand command = DocumentSubmitCommand.of(drafterId, "", "", List.of(approver));
+
+            given(userRepository.findById(approverId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.submitDocument(command))
+                    .isInstanceOf(UserNotFoundException.class)
+                    .hasMessage("결재자가 존재하지 않습니다.");
+        }
+        
+        
+        @Test
+        @DisplayName("신규 문서를 상신한다")
+        void 신규_문서_상신() {
+            // given
+            Long drafterId = 1L;
+
+            Long approverId1 = 11L;
+            Long approverId2 = 12L;
+
+            User drafter = mock(User.class);
+            given(userRepository.findById(drafterId)).willReturn(Optional.of(drafter));
+
+            User approver1 = mock(User.class);
+            given(userRepository.findById(approverId1)).willReturn(Optional.of(approver1));
+
+            User approver2 = mock(User.class);
+            given(userRepository.findById(approverId2)).willReturn(Optional.of(approver2));
+
+            ApprovalStepCommand approverCommand1 = ApprovalStepCommand.of(approverId1, 1, "첫 번째 결재자");
+            ApprovalStepCommand approverCommand2 = ApprovalStepCommand.of(approverId2, 2, "두 번째 결재자");
+
+            DocumentSubmitCommand command = DocumentSubmitCommand.of(drafterId, "변경할 제목 값", "변경할 내용 값", List.of(approverCommand1, approverCommand2));
+
+            given(documentRepository.save(any(Document.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            DocumentSubmitResponse submittedDoc = documentService.submitDocument(command);
+
+            // then
+            assertThat(submittedDoc.getTitle()).isEqualTo("변경할 제목 값");
+            assertThat(submittedDoc.getContent()).isEqualTo("변경할 내용 값");
+            assertThat(submittedDoc.getDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+            assertThat(submittedDoc.getSteps())
+                    .extracting(ApprovalStepResponse::getStepOrder, ApprovalStepResponse::getStepStatus)
+                    .containsExactly(
+                            tuple(1, ApprovalStepStatus.PENDING),
+                            tuple(2, ApprovalStepStatus.WAITING)
+                    );
+        }
+
+
+        @Test
+        @DisplayName("임시저장 문서 상신 시 이력은 SUBMITTED 상태로 저장돼야 한다")
+        void 임시저장_문서_상신_이력() {
+            // given
+            Long documentId = 1L;
+            Long approverId = 11L;
+
+            User drafter = mock(User.class);
+            User approver = mock(User.class);
+            given(userRepository.findById(approverId)).willReturn(Optional.of(approver));
+
+            Document doc = Document.createDraftWithApprovalLine(
+                    drafter,
+                    "변경 전 제목",
+                    "변경 전 내용",
+                    List.of(ApprovalStepData.of(approver, 1, "첫 번째 결재자"))
+            );
+            given(documentRepository.findDetailById(documentId)).willReturn(Optional.of(doc));
+
+            DraftedDocumentSubmitCommand command = DraftedDocumentSubmitCommand.of(
+                    documentId,
+                    1L,
+                    "변경 후 제목",
+                    "변경 후 내용",
+                    List.of(ApprovalStepCommand.of(approverId, 1, "첫 번째 결재자"))
+            );
+
+            // when
+            documentService.submitDraftedDocument(command);
+
+            // then
+            ArgumentCaptor<DocumentHistory> captor = ArgumentCaptor.forClass(DocumentHistory.class);
+            then(documentHistoryRepository).should().save(captor.capture());
+
+            DocumentHistory history = captor.getValue();
+            assertThat(history.getActor()).isSameAs(drafter);
+            assertThat(history.getActionType()).isEqualTo(ActionType.SUBMITTED);
+            assertThat(history.getBeforeDocumentStatus()).isEqualTo(DocumentStatus.DRAFT);
+            assertThat(history.getAfterDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+            assertThat(history.getMemo()).isEqualTo("임시저장 문서 상신");
+        }
+        
+        
+        @Test
+        @DisplayName("신규 문서 상신 시 이력은 SUBMITTED 상태로 저장돼야 한다")
+        void 신규_문서_상신_이력() {
+            // given
+            Long drafterId = 1L;
+            Long approverId = 11L;
+
+            User drafter = mock(User.class);
+            given(userRepository.findById(drafterId)).willReturn(Optional.of(drafter));
+
+            User approver = mock(User.class);
+            given(userRepository.findById(approverId)).willReturn(Optional.of(approver));
+
+            DocumentSubmitCommand command = DocumentSubmitCommand.of(
+                    drafterId,
+                    "제목",
+                    "내용",
+                    List.of(ApprovalStepCommand.of(approverId, 1, "첫 번째 결재자"))
+            );
+
+            given(documentRepository.save(any(Document.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            documentService.submitDocument(command);
+            
+            // then
+            ArgumentCaptor<DocumentHistory> captor = ArgumentCaptor.forClass(DocumentHistory.class);
+            then(documentHistoryRepository).should().save(captor.capture());
+
+            DocumentHistory history = captor.getValue();
+            assertThat(history.getActor()).isSameAs(drafter);
+            assertThat(history.getActionType()).isEqualTo(ActionType.SUBMITTED);
+            assertThat(history.getBeforeDocumentStatus()).isEqualTo(DocumentStatus.DRAFT);
+            assertThat(history.getAfterDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+            assertThat(history.getMemo()).isEqualTo("문서 상신");
+        }
     }
 }

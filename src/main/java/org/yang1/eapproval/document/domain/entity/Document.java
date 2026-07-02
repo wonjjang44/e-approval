@@ -115,6 +115,83 @@ public class Document extends BaseEntity {
 
 
     /**
+     * 상신의 경우의 수
+     * - 1. 임시저장된 문서를 상신
+     * - 2. 임시저장하지 않은 상태에서 제목 + 내용 + 결재선 입력 후 일괄 상신
+     *
+     * 상신이 되면 어떤 현상이 발생하는가
+     *  - 문서 상태가 IN_PROGRESS 상태로 변경된다 => 도메인 엔티티 비즈니스 로직 담당
+     */
+    public void submit() {
+        if(this.documentStatus != DocumentStatus.DRAFT || this.approvalLine == null)
+            throw new IllegalArgumentException("상신할 수 없는 상태의 문서입니다.");
+
+        this.documentStatus = DocumentStatus.IN_PROGRESS;
+        this.submittedAt = LocalDateTime.now();
+
+        this.approvalLine.lineSubmit();
+    }
+
+
+    /**
+     * 문서 제목 수정
+     *
+     * @param title
+     */
+    public void updateTitle(String title) {
+        if(title == null || title.isBlank()) throw new IllegalArgumentException("제목은 공란일 수 없습니다.");
+        if(this.documentStatus == null || this.documentStatus != DocumentStatus.DRAFT)
+            throw new IllegalArgumentException("임시저장 상태에서만 가능합니다.");
+
+        this.title = title;
+    }
+
+
+    /**
+     * 문서 내용 수정
+     *
+     * @param content
+     */
+    public void updateContent(String content) {
+        if(this.documentStatus == null || this.documentStatus != DocumentStatus.DRAFT)
+            throw new IllegalArgumentException("임시저장 상태에서만 가능합니다.");
+
+        this.content = content;
+    }
+
+
+    /**
+     * 결재선 생성
+     * 임시저장 상태의 문서에 결재선을 붙이기 위함
+     *
+     * @param steps
+     */
+    public void attachApprovalLine(List<ApprovalStepData> steps) {
+        if(steps == null || steps.isEmpty()) throw new IllegalArgumentException("결재자는 최소 1명 이상 존재해야 합니다.");
+        if(this.documentStatus == null || this.documentStatus != DocumentStatus.DRAFT)
+            throw new IllegalArgumentException("임시저장 상태에서만 결재선을 추가할 수 있습니다.");
+
+        /*
+             임시저장 문서의 경우의 수
+             1. 제목 + 내용만 입력된 상태
+             2. 제목 + 내용 + 결재선까지 모두 입력된 상태
+             두 번째 케이스에서 결재선이 변경됐다면 UK 제약 조건 위배가 발생할 수 있음
+             hibernate flush 순서는  i -> u -> d 순서임.
+             따라서 UK 제약 조건 위배의 원흉인 결재선(ApprovalLine)을 통째로 갈아끼우기 보단
+             결재선에 물린 결재 단계들만 모두 지운 다음 새롭게 insert해주면 된다.
+         */
+
+        // 임시저장 문서에 결재선이 없는 경우
+        if(this.approvalLine == null) {
+            ApprovalLine line = ApprovalLine.create(this.drafter, steps);
+            assignApprovalLine(line);
+        } else { // 결재선이 있다면 결재 단계만 교체한다(기존 결재선 살림)
+            this.approvalLine.replaceSteps(steps);
+        }
+    }
+
+
+    /**
      * Document <-> ApprovalLine 1:1 양방향 연관관계 연결
      *
      * @param approvalLine ApprovalLine
