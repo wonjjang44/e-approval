@@ -10,6 +10,8 @@ import org.yang1.eapproval.user.domain.entity.User;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.BDDAssertions.tuple;
 import static org.mockito.BDDMockito.*;
 
 class DocumentTest {
@@ -105,4 +107,159 @@ class DocumentTest {
         assertThat(approvalSteps.get(2).getApprover()).isSameAs(approver3);
     }
     
+    
+    @Test
+    @DisplayName("임시저장 + 결재선이 있는 문서를 상신하면 문서는 IN_PROGRESS 상태가 되고 첫 결재단계는 PENDING이 돼야 한다")
+    void 문서_상신_성공() {
+        // given
+        User drafter = mock(User.class);
+
+        User approver1 = mock(User.class);
+        User approver2 = mock(User.class);
+
+        Document doc = Document.createDraftWithApprovalLine(
+                drafter,
+                "제목",
+                "내용",
+                List.of(
+                        ApprovalStepData.of(approver1, 1, "첫 번째 결재자"),
+                        ApprovalStepData.of(approver2, 2, "두 번째 결재자")
+                )
+        );
+
+        // when
+        doc.submit();
+
+        // then
+        assertThat(doc.getDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+        assertThat(doc.getSubmittedAt()).isNotNull();
+
+        List<ApprovalStep> steps = doc.getApprovalLine().getApprovalSteps();
+        assertThat(steps.get(0).getStepStatus()).isEqualTo(ApprovalStepStatus.PENDING);
+        assertThat(steps.get(1).getStepStatus()).isEqualTo(ApprovalStepStatus.WAITING);
+    }
+
+
+    @Test
+    @DisplayName("결재선이 없는 문서를 상신하면 예외가 발생해야 한다")
+    void 결재선_없는_문서_상신_시_예외() {
+        // given
+        User drafter = mock(User.class);
+        Document doc = Document.createDraft(drafter, "테스트 제목", "테스트 내용");
+
+        // when & then
+        assertThatThrownBy(() -> doc.submit())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("상신할 수 없는 상태의 문서입니다.");
+    }
+
+
+    @Test
+    @DisplayName("이미 상신된 문서를 다시 상신하면 예외가 발생해야 한다")
+    void 재상신_시_예외() {
+        // given
+        User drafter = mock(User.class);
+        User approver = mock(User.class);
+
+        Document doc = Document.createDraftWithApprovalLine(
+                drafter,
+                "제목",
+                "제목이 곧 내용",
+                List.of(
+                        ApprovalStepData.of(approver, 1, "첫 번째 결재자")
+                )
+        );
+
+        doc.submit();
+
+        // when & then
+        assertThatThrownBy(() -> doc.submit())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("상신할 수 없는 상태의 문서입니다.");
+    }
+
+
+    @Test
+    @DisplayName("결재선이 있는 임시저장 문서에 결재선을 추가하면 기존 결재선을 유지한 채 결재단계만 교체한다")
+    void 결재선_있는_문서에_결재선_추가_시_기존_결재선_유지() {
+        // given
+        User drafter = mock(User.class);
+
+        User oldApprover = mock(User.class);
+        User newApprover1 = mock(User.class);
+        User newApprover2 = mock(User.class);
+
+        Document doc = Document.createDraftWithApprovalLine(
+                drafter,
+                "제목",
+                "내용",
+                List.of(ApprovalStepData.of(oldApprover, 1, "기존 결재자"))
+        );
+
+        ApprovalLine beforeLine = doc.getApprovalLine();
+
+        List<ApprovalStepData> newSteps = List.of(
+                ApprovalStepData.of(newApprover1, 1, "새로운 결재선의 첫 번째 결재자"),
+                ApprovalStepData.of(newApprover2, 2, "새로운 결재선의 두 번째 결재자")
+        );
+
+        // when
+        doc.attachApprovalLine(newSteps);
+
+        // then
+        assertThat(doc.getApprovalLine()).isSameAs(beforeLine);
+        assertThat(doc.getApprovalLine().getApprovalSteps())
+                .extracting(ApprovalStep::getApprover, ApprovalStep::getStepOrder, ApprovalStep::getCommentText)
+                .containsExactly(
+                        tuple(newApprover1, 1, "새로운 결재선의 첫 번째 결재자"),
+                        tuple(newApprover2, 2, "새로운 결재선의 두 번째 결재자")
+                );
+    }
+
+
+    @Test
+    @DisplayName("결재선 추가 시 결재자가 비어 있다면 예외가 발생해야 한다")
+    void 결재선_추가_시_결재가_없다면_예외() {
+        // given
+        User drafter = mock(User.class);
+        Document doc = Document.createDraft(drafter, "제목", "내용");
+
+        // when & then
+        assertThatThrownBy(() -> doc.attachApprovalLine(List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("결재자는 최소 1명 이상 존재해야 합니다.");
+
+        assertThatThrownBy(() -> doc.attachApprovalLine(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("결재자는 최소 1명 이상 존재해야 합니다.");
+    }
+
+
+    @Test
+    @DisplayName("임시저장 상태가 아닌 문서에 결재선을 추가하면 예외가 발생해야 한다")
+    void 임시저장_아닌_문서에_결재선_추가_시_예외() {
+        // given
+        User drafter = mock(User.class);
+        User approver = mock(User.class);
+
+        Document doc = Document.createDraftWithApprovalLine(
+                drafter,
+                "제목",
+                "내용",
+                List.of(ApprovalStepData.of(approver, 1, "첫 번째 결재자"))
+        );
+
+        doc.submit();
+
+        User newApprover = mock(User.class);
+
+        // when & then
+        assertThatThrownBy(() -> doc.attachApprovalLine(
+                List.of(
+                        ApprovalStepData.of(newApprover, 1, "새로운 결재자"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("임시저장 상태에서만 결재선을 추가할 수 있습니다.");
+
+        // then
+    }
 }
