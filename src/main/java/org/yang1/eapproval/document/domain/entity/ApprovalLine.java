@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.yang1.eapproval.common.entity.BaseEntity;
+import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
 import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.document.exception.InvalidDocumentStatusException;
 import org.yang1.eapproval.user.domain.entity.User;
@@ -80,8 +81,44 @@ public class ApprovalLine extends BaseEntity {
             ApprovalStep approvalStep = ApprovalStep.create(step.getApprover(), step.getStepOrder(), step.getCommentText());
             assignApprovalStep(approvalStep);
         });
-
     }
+
+
+    /**
+     * 결재선의 결재자들의 순번대로 결재를 진행해야 한다
+     *
+     * @param approverId
+     * @param commentText
+     * @return
+     */
+    public ApprovalStep approveSteps(Long approverId, String commentText) {
+        // 결재 상태가 PENDING(자신의 결재차례)인 결재자 조회
+        ApprovalStep currentStep = this.approvalSteps.stream()
+                .filter(step -> step.getStepStatus() == ApprovalStepStatus.PENDING)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("결재할 차례의 단계가 존재하지 않습니다."));
+
+        // 실제 상태 변경은 ApprovalStep에서 진행한다
+        currentStep.approve(approverId, commentText);
+
+        // 다음 WAITING 상태를 PENDING 상태로 변경한다(앞 사람 결재 끝났으니까)
+        this.approvalSteps.stream()
+                .filter(step -> step.getStepStatus() == ApprovalStepStatus.WAITING)
+                .min(Comparator.comparingInt(ApprovalStep::getStepOrder))
+                .ifPresent(ApprovalStep::stepSubmit);
+
+        return currentStep;
+    }
+
+
+    /**
+     * 모든 결재자가 결재를 승인 했는지 체크
+     */
+    public boolean isAllApproved() {
+        return this.approvalSteps.stream()
+                .allMatch(step -> step.getStepStatus() == ApprovalStepStatus.APPROVED);
+    }
+
 
 
     void connectDocument(Document document) {

@@ -72,6 +72,21 @@ public class ApprovalStep extends BaseEntity {
     }
 
 
+    /**
+     * 본인 차례의 결재 승인
+     */
+    public void approve(Long approverId, String commentText) {
+        if(this.stepStatus != ApprovalStepStatus.PENDING) throw new IllegalArgumentException("결재할 차례의 단계가 아닙니다.");
+        if(!this.approver.getId().equals(approverId)) throw new IllegalArgumentException("해당 단계의 결재자가 아닙니다.");
+
+        this.stepStatus = ApprovalStepStatus.APPROVED;
+        this.actedAt = LocalDateTime.now();
+        this.commentText = commentText;
+    }
+
+
+
+
     void connectApprovalLine(ApprovalLine approvalLine) {
         this.approvalLine = approvalLine;
     }

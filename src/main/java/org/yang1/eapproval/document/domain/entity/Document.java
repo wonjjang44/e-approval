@@ -192,6 +192,29 @@ public class Document extends BaseEntity {
 
 
     /**
+     * 승인이 어떻게 이루어지나?
+     * 1. 문서의 상태는 반드시 결재 진행 중 상태여야 한다.
+     * 2. 결재선이 반드시 존재해야 한다.
+     * 3. 존재하는 결재선에 속한 결재자들의 결재 순번대로 결재가 이루어저야 한다.
+     */
+    public ApprovalStep approve(Long approverId, String commentText) {
+        if(this.documentStatus != DocumentStatus.IN_PROGRESS) throw new IllegalArgumentException("결재 진행 중인 문서가 아닙니다.");
+
+        // 결재선으로 위임 -> 결재선에 포함된 결재자들(결재단계) 순번을 확인하여 순차적으로 결재 진행하게 한다
+        ApprovalStep approvedStep = this.approvalLine.approveSteps(approverId, commentText);
+
+        // 마지막 결재 단계까지 결재 완료 됐다면 문서 최종 승인처리
+        if(this.approvalLine.isAllApproved()) {
+            this.documentStatus = DocumentStatus.APPROVED;
+            this.completedAt = LocalDateTime.now();
+        }
+
+        return approvedStep;
+    }
+
+
+
+    /**
      * Document <-> ApprovalLine 1:1 양방향 연관관계 연결
      *
      * @param approvalLine ApprovalLine
