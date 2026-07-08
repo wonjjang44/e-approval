@@ -8,12 +8,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.yang1.eapproval.document.application.command.ApprovalStepCommand;
-import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
-import org.yang1.eapproval.document.application.command.DocumentSubmitCommand;
-import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
+import org.yang1.eapproval.document.application.command.*;
+import org.yang1.eapproval.document.domain.entity.ApprovalHistory;
 import org.yang1.eapproval.document.domain.entity.Document;
 import org.yang1.eapproval.document.domain.entity.DocumentHistory;
+import org.yang1.eapproval.document.domain.repository.ApprovalHistoryRepository;
 import org.yang1.eapproval.document.domain.repository.DocumentHistoryRepository;
 import org.yang1.eapproval.document.domain.repository.DocumentRepository;
 import org.yang1.eapproval.document.domain.status.ActionType;
@@ -21,10 +20,7 @@ import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.document.exception.DocumentNotFoundException;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.ApprovalStepResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.*;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.repository.UserRepository;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
@@ -50,6 +46,9 @@ class DocumentServiceTest {
 
     @Mock
     DocumentHistoryRepository documentHistoryRepository;
+
+    @Mock
+    ApprovalHistoryRepository approvalHistoryRepository;
 
     @InjectMocks
     DocumentService documentService;
@@ -613,6 +612,125 @@ class DocumentServiceTest {
             assertThat(history.getBeforeDocumentStatus()).isEqualTo(DocumentStatus.DRAFT);
             assertThat(history.getAfterDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
             assertThat(history.getMemo()).isEqualTo("문서 상신");
+        }
+    }
+
+
+    @Nested
+    @DisplayName("문서 승인 테스트")
+    class createApproveTests {
+        
+        @Test
+        @DisplayName("승인할 문서가 존재하지 않는다면 예외가 발생해야 한다")
+        void 승인_문서_누락_시_예외() {
+            // given
+            DocumentApproveCommand command = DocumentApproveCommand.of(1L, 99L, "결재 승인 진행");
+
+            given(documentRepository.findDetailById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.approveDocument(command))
+                    .isInstanceOf(DocumentNotFoundException.class)
+                    .hasMessage("문서가 존재하지 않습니다.");
+        }
+        
+        
+        @Test
+        @DisplayName("결재 최종 승인 전에는 결재 이력만 쌓여야 한다")
+        void 결재_최종_승인_전에는_결재_이력만_쌓인다() {
+            // given
+            User approver1 = mock(User.class);
+            given(approver1.getId()).willReturn(1L);
+
+            User approver2 = mock(User.class);
+
+            ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+            ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+
+            List<ApprovalStepData> approvers = List.of(stepData1, stepData2);
+
+            Document doc = Document.createDraftWithApprovalLine(mock(User.class), "연차 사용", "연차 1일 사용 결재 부탁드립니다.", approvers);
+            doc.submit();
+
+            given(documentRepository.findDetailById(999L)).willReturn(Optional.of(doc));
+
+            DocumentApproveCommand command = DocumentApproveCommand.of(999L, 1L, "첫 번째 결재자 승인 시작");
+
+            // when
+            documentService.approveDocument(command);
+
+            // then
+            then(documentHistoryRepository).should(never()).save(any(DocumentHistory.class));
+
+            ArgumentCaptor<ApprovalHistory> captor = ArgumentCaptor.forClass(ApprovalHistory.class);
+            then(approvalHistoryRepository).should().save(captor.capture());
+
+            ApprovalHistory history = captor.getValue();
+            assertThat(history.getActor()).isSameAs(approver1);
+            assertThat(history.getActionType()).isEqualTo(ActionType.APPROVED);
+            assertThat(history.getBeforeApprovalStatus()).isEqualTo(ApprovalStepStatus.PENDING);
+            assertThat(history.getAfterApprovalStatus()).isEqualTo(ApprovalStepStatus.APPROVED);
+            assertThat(history.getCommentText()).isEqualTo("첫 번째 결재자 승인 시작");
+        }
+        
+        
+        @Test
+        @DisplayName("결재 최종 승인 시 문서 이력과 결재 이력이 같이 쌓여야 한다")
+        void 최종_승인_시_문서이력과와_결재이력이_같이_쌓인다() {
+            // given
+            User approver1 = mock(User.class);
+            given(approver1.getId()).willReturn(1L);
+
+            User approver2 = mock(User.class);
+            given(approver2.getId()).willReturn(2L);
+
+            User approver3 = mock(User.class);
+            given(approver3.getId()).willReturn(3L);
+
+            ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+            ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+            ApprovalStepData stepData3 = ApprovalStepData.of(approver3, 3, "마지막 번째 결재자");
+
+            List<ApprovalStepData> approvers = List.of(stepData1, stepData2, stepData3);
+
+            Document doc = Document.createDraftWithApprovalLine(mock(User.class), "휴가 기안서", "연차 1일 사용합니다.", approvers);
+            doc.submit();
+
+            // 앞 두 단계는 상태 준비용으로 엔티티에서 직접 승인한다(repository 안 거치므로 save 카운트에 안 잡힘)
+            doc.approve(1L, "첫 번째 결재자 승인 완료");
+            doc.approve(2L, "두 번째 결재자 승인 완료");
+
+            given(documentRepository.findDetailById(1000L)).willReturn(Optional.of(doc));
+
+            // 마지막 결재자 대상(마지막 결재자가 승인해야 문서 이력이 쌓이므로)
+            DocumentApproveCommand command = DocumentApproveCommand.of(1000L, 3L, "마지막 결재자 승인");
+
+            // when
+            documentService.approveDocument(command);
+
+            // then
+            // 마지막 결재자의 승인이 완료됐다면 문서 이력 쌓여야 함
+            ArgumentCaptor<DocumentHistory> docCaptor = ArgumentCaptor.forClass(DocumentHistory.class);
+            then(documentHistoryRepository).should().save(docCaptor.capture());
+
+            DocumentHistory docHistory = docCaptor.getValue();
+            assertThat(docHistory.getActor()).isSameAs(approver3);
+            assertThat(docHistory.getActionType()).isEqualTo(ActionType.APPROVED);
+            assertThat(docHistory.getBeforeDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+            assertThat(docHistory.getAfterDocumentStatus()).isEqualTo(DocumentStatus.APPROVED);
+            assertThat(docHistory.getMemo()).isEqualTo("문서 최종 승인");
+
+            // 결재 이력
+            ArgumentCaptor<ApprovalHistory> approvalCaptor = ArgumentCaptor.forClass(ApprovalHistory.class);
+            then(approvalHistoryRepository).should().save(approvalCaptor.capture());
+
+            ApprovalHistory approvalHistory = approvalCaptor.getValue();
+            assertThat(approvalHistory.getActor()).isSameAs(approver3);
+            assertThat(approvalHistory.getActionType()).isEqualTo(ActionType.APPROVED);
+            assertThat(approvalHistory.getBeforeApprovalStatus()).isEqualTo(ApprovalStepStatus.PENDING);
+            assertThat(approvalHistory.getAfterApprovalStatus()).isEqualTo(ApprovalStepStatus.APPROVED);
+            assertThat(approvalHistory.getCommentText()).isEqualTo("마지막 결재자 승인");
+
         }
     }
 }
