@@ -259,7 +259,84 @@ class DocumentTest {
                         ApprovalStepData.of(newApprover, 1, "새로운 결재자"))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("임시저장 상태에서만 결재선을 추가할 수 있습니다.");
+    }
+
+
+    @Test
+    @DisplayName("문서의 상태가 결재진행중(IN_PROGRESS) 상태가 아니라면 예외가 발생해야 한다")
+    void 문서_상태가_결재진행중이_아닐_경우_예외() {
+        // given
+        User approver1 = mock(User.class);
+        ApprovalStepData stepData = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+
+        Document doc = Document.createDraftWithApprovalLine(mock(User.class), "휴가 신청서", "2026-07-09 ~ 2026-07-09 총 1일 연차 사용", List.of(stepData));
+
+        // when & then
+        assertThatThrownBy(() -> doc.approve(1L, "첫 번째 결재자 승인 완료"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("결재 진행 중인 문서가 아닙니다.");
+    }
+    
+    
+    @Test
+    @DisplayName("결재 승인 시 나머지 결재에 대한 상태 변화 추적")
+    void 결재_승인_시_나머지_결재의_상태_변화() {
+        // given
+        User approver1 = mock(User.class);
+        given(approver1.getId()).willReturn(1L);
+
+        User approver2 = mock(User.class);
+        given(approver2.getId()).willReturn(2L);
+
+        User approver3 = mock(User.class);
+        given(approver3.getId()).willReturn(3L);
+
+        ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+        ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+        ApprovalStepData stepData3 = ApprovalStepData.of(approver3, 3, "세 번째 결재자");
+
+        List<ApprovalStepData> approvers = List.of(stepData1, stepData2, stepData3);
+
+        Document doc = Document.createDraftWithApprovalLine(mock(User.class), "휴가 신청서", "2026-07-09 ~ 2026-07-09 총 1일 연차 사용", approvers);
+        doc.submit();
+
+        // when
+        doc.approve(1L, "첫 번째 결재자 결재 승인 완료");
 
         // then
+        assertThat(doc.getDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+        assertThat(doc.getCompletedAt()).isNull();
+    }
+
+
+    @Test
+    @DisplayName("문서 결재 최종 승인")
+    void 문서_결재_최종_승인() {
+        User approver1 = mock(User.class);
+        given(approver1.getId()).willReturn(1L);
+
+        User approver2 = mock(User.class);
+        given(approver2.getId()).willReturn(2L);
+
+        User approver3 = mock(User.class);
+        given(approver3.getId()).willReturn(3L);
+
+        ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+        ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+        ApprovalStepData stepData3 = ApprovalStepData.of(approver3, 3, "세 번째 결재자");
+
+        List<ApprovalStepData> approvers = List.of(stepData1, stepData2, stepData3);
+
+        Document doc = Document.createDraftWithApprovalLine(mock(User.class), "휴가 신청서", "2026-07-09 ~ 2026-07-09 총 1일 연차 사용", approvers);
+        doc.submit();
+
+        // when
+        doc.approve(1L, "첫 번째 결재자 결재 승인 완료");
+        doc.approve(2L, "두 번째 결재자 결재 승인 완료");
+        doc.approve(3L, "세 번째 결재자 결재 승인 완료");
+
+        // then
+        assertThat(doc.getDocumentStatus()).isEqualTo(DocumentStatus.APPROVED);
+        assertThat(doc.getCompletedAt()).isNotNull();
     }
 }
