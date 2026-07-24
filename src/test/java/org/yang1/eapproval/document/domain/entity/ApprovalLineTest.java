@@ -1,6 +1,7 @@
 package org.yang1.eapproval.document.domain.entity;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
 import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
@@ -181,6 +182,69 @@ class ApprovalLineTest {
 
         // then
         assertThat(isApproved).isTrue();
+    }
+
+
+    @Test
+    @DisplayName("PENDING 단계가 없다면 반려 시 예외가 발생해야 한다")
+    void 반려_시_현재_결재차례_단계가_없다면_예외() {
+        // given
+        User createdUser = mock(User.class);
+
+        User approver = mock(User.class);
+        given(approver.getId()).willReturn(1L);
+
+        ApprovalStepData approverData = ApprovalStepData.of(approver, 1, "첫 번째 결재자");
+
+        // lineSubmit 호출 안 함 → 전부 WAITING
+        ApprovalLine line = ApprovalLine.create(createdUser, List.of(approverData));
+
+        // when & then
+        assertThatThrownBy(() -> line.rejectSteps(approver.getId(), "반려"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("결재할 차례의 단계가 존재하지 않습니다.");
+    }
+
+
+    @Test
+    @DisplayName("반려 시 현재 단계는 REJECTED, 뒤에 남은 대기 단계는 모두 CANCELED가 돼야 한다")
+    void 반려_시_나머지_결재의_상태_변경돼야_한다() {
+        // given
+        User createdUser = mock(User.class);
+
+        User approver1 = mock(User.class);
+        given(approver1.getId()).willReturn(1L);
+
+        User approver2 = mock(User.class);
+        given(approver2.getId()).willReturn(2L);
+
+        User approver3 = mock(User.class);
+        given(approver3.getId()).willReturn(3L);
+
+        ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+        ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+        ApprovalStepData stepData3 = ApprovalStepData.of(approver3, 3, "세 번째 결재자");
+
+        List<ApprovalStepData> approvers = List.of(stepData1, stepData2, stepData3);
+        ApprovalLine line = ApprovalLine.create(createdUser, approvers);
+        line.lineSubmit(); // PENDING
+
+        // when
+        line.approveSteps(1L, "첫 번째 결재자 승인"); // 첫 번째 결재자 APPROVED 후 PENDING 변경
+        line.rejectSteps(2L, "두 번째 결재자 반려"); // 두 번째 결재자 REJECTED 변경 후 이후 결재자들 CANCELED로 변경
+
+        // then
+        assertThat(line.getApprovalSteps())
+                .extracting(
+                        ApprovalStep::getStepOrder,
+                        ApprovalStep::getStepStatus,
+                        ApprovalStep::getCommentText
+                )
+                .containsExactly(
+                        tuple(1, ApprovalStepStatus.APPROVED, "첫 번째 결재자 승인"),
+                        tuple(2, ApprovalStepStatus.REJECTED, "두 번째 결재자 반려"),
+                        tuple(3, ApprovalStepStatus.CANCELED, "세 번째 결재자")
+                );
     }
 
 }

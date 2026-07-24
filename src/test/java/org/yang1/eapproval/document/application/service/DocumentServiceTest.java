@@ -733,4 +733,73 @@ class DocumentServiceTest {
 
         }
     }
+
+
+    @Nested
+    @DisplayName("문서 반려 테스트")
+    class createRejectTests {
+
+        @Test
+        @DisplayName("반려할 문서가 존재하지 않는다면 예외가 발생해야 한다")
+        void 반려_문서_누락_시_예외() {
+            // given
+            DocumentRejectCommand command = DocumentRejectCommand.of(1L, 99L, "반려 사유");
+
+            given(documentRepository.findDetailById(1L)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> documentService.rejectDocument(command))
+                    .isInstanceOf(DocumentNotFoundException.class)
+                    .hasMessage("문서가 존재하지 않습니다.");
+        }
+
+
+        @Test
+        @DisplayName("문서 반려 시 문서 이력과 결재 이력이 같이 쌓여야 한다")
+        void 반려_시_문서이력과_결재이력이_같이_쌓인다() {
+            // given
+            User approver1 = mock(User.class);
+            given(approver1.getId()).willReturn(1L);
+
+            User approver2 = mock(User.class);
+
+            ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+            ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+
+            List<ApprovalStepData> approvers = List.of(stepData1, stepData2);
+
+            Document doc = Document.createDraftWithApprovalLine(mock(User.class), "연차 사용", "연차 1일 사용합니다.", approvers);
+            doc.submit(); // PENDING
+
+            given(documentRepository.findDetailById(999L)).willReturn(Optional.of(doc));
+
+            DocumentRejectCommand command = DocumentRejectCommand.of(999L, 1L, "날짜가 누락되어 반려합니다");
+
+            // when
+            documentService.rejectDocument(command);
+
+            // then
+            // 반려는 항상 문서 상태를 바꾸므로 문서 이력이 반드시 쌓임
+            ArgumentCaptor<DocumentHistory> docCaptor = ArgumentCaptor.forClass(DocumentHistory.class);
+            then(documentHistoryRepository).should().save(docCaptor.capture());
+
+            DocumentHistory docHistory = docCaptor.getValue();
+            assertThat(docHistory.getActor()).isSameAs(approver1);
+            assertThat(docHistory.getActionType()).isEqualTo(ActionType.REJECTED);
+            assertThat(docHistory.getBeforeDocumentStatus()).isEqualTo(DocumentStatus.IN_PROGRESS);
+            assertThat(docHistory.getAfterDocumentStatus()).isEqualTo(DocumentStatus.REJECTED);
+            assertThat(docHistory.getMemo()).isEqualTo("문서 반려");
+
+            // 결재 이력
+            ArgumentCaptor<ApprovalHistory> approvalCaptor = ArgumentCaptor.forClass(ApprovalHistory.class);
+            then(approvalHistoryRepository).should().save(approvalCaptor.capture());
+
+            ApprovalHistory approvalHistory = approvalCaptor.getValue();
+            assertThat(approvalHistory.getActor()).isSameAs(approver1);
+            assertThat(approvalHistory.getActionType()).isEqualTo(ActionType.REJECTED);
+            assertThat(approvalHistory.getBeforeApprovalStatus()).isEqualTo(ApprovalStepStatus.PENDING);
+            assertThat(approvalHistory.getAfterApprovalStatus()).isEqualTo(ApprovalStepStatus.REJECTED);
+            assertThat(approvalHistory.getCommentText()).isEqualTo("날짜가 누락되어 반려합니다");
+        }
+    }
 }
