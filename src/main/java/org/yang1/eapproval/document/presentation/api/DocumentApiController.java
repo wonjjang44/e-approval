@@ -6,19 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.yang1.eapproval.common.response.ApiResult;
-import org.yang1.eapproval.document.application.command.DocumentApproveCommand;
-import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
-import org.yang1.eapproval.document.application.command.DocumentSubmitCommand;
-import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
+import org.yang1.eapproval.document.application.command.*;
 import org.yang1.eapproval.document.application.service.DocumentService;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentApproveResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
-import org.yang1.eapproval.document.presentation.api.dto.request.DocumentApproveRequest;
-import org.yang1.eapproval.document.presentation.api.dto.request.DocumentDraftRequest;
-import org.yang1.eapproval.document.presentation.api.dto.request.DocumentSubmitRequest;
-import org.yang1.eapproval.document.presentation.api.dto.request.DraftedDocumentSubmitRequest;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.*;
+import org.yang1.eapproval.document.presentation.api.dto.request.*;
 
 @RestController
 @RequestMapping("/api")
@@ -85,10 +76,30 @@ public class DocumentApiController {
     }
 
 
+    /**
+     * 문서 승인
+     *
+     * @param request
+     * @return
+     */
     @PostMapping("/documents/approve")
     public ResponseEntity<ApiResult<DocumentApproveResponse>> createApproveDocument(@RequestBody @Valid DocumentApproveRequest request) {
         DocumentApproveCommand command = request.toCommand();
 
         return ResponseEntity.ok(ApiResult.success("문서 승인 성공", documentService.approveDocument(command)));
+    }
+
+
+    /**
+     * 문서 결재 반려
+     *
+     * @param request
+     * @return
+     */
+    @PostMapping("/documents/reject")
+    public ResponseEntity<ApiResult<DocumentRejectResponse>> createRejectDocument(@RequestBody @Valid DocumentRejectRequest request) {
+        DocumentRejectCommand command = request.toCommand();
+
+        return ResponseEntity.ok(ApiResult.success("문서 반려 성공", documentService.rejectDocument(command)));
     }
 }

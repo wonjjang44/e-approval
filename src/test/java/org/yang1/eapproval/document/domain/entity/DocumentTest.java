@@ -339,4 +339,61 @@ class DocumentTest {
         assertThat(doc.getDocumentStatus()).isEqualTo(DocumentStatus.APPROVED);
         assertThat(doc.getCompletedAt()).isNotNull();
     }
+
+
+    @Test
+    @DisplayName("문서 상태가 결재진행중(IN_PROGRESS)이 아니라면 반려 시 예외가 발생해야 한다")
+    void 반려_시_문서_상태가_결재진행중이_아니면_예외() {
+        // given
+        User approver = mock(User.class);
+        ApprovalStepData stepData = ApprovalStepData.of(approver, 1, "첫 번째 결재자");
+
+        // 상신하지 않은 DRAFT 문서
+        Document doc = Document.createDraftWithApprovalLine(mock(User.class), "휴가 신청서", "연차 1일", List.of(stepData));
+
+        // when & then
+        assertThatThrownBy(() -> doc.reject(1L, "반려 사유"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("결재 진행 중인 문서가 아닙니다.");
+    }
+
+
+    @Test
+    @DisplayName("문서 반려 시 문서는 REJECTED가 되고, 남은 대기 단계는 CANCELED가 돼야 한다")
+    void 문서_반려() {
+        // given
+        User approver1 = mock(User.class);
+        given(approver1.getId()).willReturn(1L);
+
+        User approver2 = mock(User.class);
+        given(approver2.getId()).willReturn(2L);
+
+        User approver3 = mock(User.class);
+        given(approver3.getId()).willReturn(3L);
+
+        ApprovalStepData stepData1 = ApprovalStepData.of(approver1, 1, "첫 번째 결재자");
+        ApprovalStepData stepData2 = ApprovalStepData.of(approver2, 2, "두 번째 결재자");
+        ApprovalStepData stepData3 = ApprovalStepData.of(approver3, 3, "세 번째 결재자");
+
+        List<ApprovalStepData> approvers = List.of(stepData1, stepData2, stepData3);
+        Document doc = Document.createDraftWithApprovalLine(mock(User.class), "휴가 신청서", "연차 1일", approvers);
+        doc.submit();
+        doc.approve(1L, "첫 번째 결재자 승인 완료"); // 1: APPROVED, 2: PENDING
+
+        // when
+        doc.reject(2L, "두 번째 결재자 반려"); // 2: REJECTED, 3: CANCELED
+
+        // then
+        assertThat(doc.getDocumentStatus()).isEqualTo(DocumentStatus.REJECTED);
+        assertThat(doc.getRejectedAt()).isNotNull();
+        assertThat(doc.getCompletedAt()).isNull(); // 반려는 완료가 아니므로 completedAt 없음
+
+        assertThat(doc.getApprovalLine().getApprovalSteps())
+                .extracting(ApprovalStep::getStepOrder, ApprovalStep::getStepStatus)
+                .containsExactly(
+                        tuple(1, ApprovalStepStatus.APPROVED),
+                        tuple(2, ApprovalStepStatus.REJECTED),
+                        tuple(3, ApprovalStepStatus.CANCELED)
+                );
+    }
 }
