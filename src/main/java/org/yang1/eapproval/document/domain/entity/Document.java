@@ -213,6 +213,26 @@ public class Document extends BaseEntity {
     }
 
 
+    /**
+     * 문서 결재 반려
+     * 현재 차례(PENDING)의 결재자가 반려하면 문서는 즉시 반려(REJECTED) 처리
+     *
+     * @param approverId
+     * @param commentText
+     * @return
+     */
+    public ApprovalStep reject(Long approverId, String commentText) {
+        if(this.documentStatus != DocumentStatus.IN_PROGRESS) throw new IllegalArgumentException("결재 진행 중인 문서가 아닙니다.");
+
+        ApprovalStep rejectedStep = this.approvalLine.rejectSteps(approverId, commentText);
+
+        // 한 명이라도 반려하면 문서는 바로 반려 종료
+        this.documentStatus = DocumentStatus.REJECTED;
+        this.rejectedAt = LocalDateTime.now();
+
+        return rejectedStep;
+    }
+
 
     /**
      * Document <-> ApprovalLine 1:1 양방향 연관관계 연결

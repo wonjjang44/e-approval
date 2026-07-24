@@ -3,10 +3,7 @@ package org.yang1.eapproval.document.application.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.yang1.eapproval.document.application.command.DocumentApproveCommand;
-import org.yang1.eapproval.document.application.command.DocumentDraftCommand;
-import org.yang1.eapproval.document.application.command.DocumentSubmitCommand;
-import org.yang1.eapproval.document.application.command.DraftedDocumentSubmitCommand;
+import org.yang1.eapproval.document.application.command.*;
 import org.yang1.eapproval.document.domain.entity.ApprovalHistory;
 import org.yang1.eapproval.document.domain.entity.ApprovalStep;
 import org.yang1.eapproval.document.domain.entity.Document;
@@ -19,11 +16,7 @@ import org.yang1.eapproval.document.domain.status.ApprovalStepStatus;
 import org.yang1.eapproval.document.domain.status.DocumentStatus;
 import org.yang1.eapproval.document.domain.vo.ApprovalStepData;
 import org.yang1.eapproval.document.exception.DocumentNotFoundException;
-import org.yang1.eapproval.document.infrastructure.repository.jpa.ApprovalHistoryJpaRepository;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentApproveResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDetailResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentDraftResponse;
-import org.yang1.eapproval.document.presentation.api.dto.reponse.DocumentSubmitResponse;
+import org.yang1.eapproval.document.presentation.api.dto.reponse.*;
 import org.yang1.eapproval.user.domain.entity.User;
 import org.yang1.eapproval.user.domain.repository.UserRepository;
 import org.yang1.eapproval.user.exception.UserNotFoundException;
@@ -220,5 +213,32 @@ public class DocumentService {
         approvalHistoryRepository.save(stepHistory);
 
         return DocumentApproveResponse.from(doc);
+    }
+
+
+    /**
+     * 문서 결재 반려
+     *
+     * @param command
+     * @return
+     */
+    @Transactional
+    public DocumentRejectResponse rejectDocument(DocumentRejectCommand command) {
+        Document doc = documentRepository.findDetailById(command.getDocumentId())
+                .orElseThrow(() -> new DocumentNotFoundException("문서가 존재하지 않습니다."));
+
+        DocumentStatus beforeStatus = doc.getDocumentStatus();
+
+        ApprovalStep step = doc.reject(command.getApproverId(), command.getCommentText());
+
+        // 문서 이력 등록 시 반려는 항상 문서 상태를 바꾸므로 무조건 적재
+        DocumentHistory docHistory = DocumentHistory.create(doc, step.getApprover(), ActionType.REJECTED, beforeStatus, doc.getDocumentStatus(), "문서 반려");
+        documentHistoryRepository.save(docHistory);
+
+        // 결재 이력
+        ApprovalHistory stepHistory = ApprovalHistory.create(doc, step, step.getApprover(), ActionType.REJECTED, ApprovalStepStatus.PENDING, step.getStepStatus(), step.getCommentText());
+        approvalHistoryRepository.save(stepHistory);
+
+        return DocumentRejectResponse.from(doc);
     }
 }

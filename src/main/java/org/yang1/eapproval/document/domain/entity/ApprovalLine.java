@@ -120,6 +120,27 @@ public class ApprovalLine extends BaseEntity {
     }
 
 
+    /**
+     * 현재 차례(PENDING)의 결재자가 반려하면 해당 단계는 REJECTED
+     * 아직 차례가 오지 않은 대기(WAITING) 단계는 모두 CANCELED 처리
+     */
+    public ApprovalStep rejectSteps(Long approverId, String commentText) {
+        ApprovalStep currentStep = this.approvalSteps.stream()
+                .filter(step -> step.getStepStatus() == ApprovalStepStatus.PENDING)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("결재할 차례의 단계가 존재하지 않습니다."));
+
+                currentStep.reject(approverId, commentText);
+
+        // 뒤에 남은 대기 단계들은 더 이상 진행되지 않으므로 취소
+        this.approvalSteps.stream()
+                .filter(step -> step.getStepStatus() == ApprovalStepStatus.WAITING)
+                .forEach(ApprovalStep::cancel);
+
+        return currentStep;
+    }
+
+
 
     void connectDocument(Document document) {
         this.document = document;
